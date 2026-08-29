@@ -1,13 +1,44 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, DownloadSimple, Printer, X } from "@phosphor-icons/react";
+import { ArrowLeft, DownloadSimple, LockKey, Printer, Trash, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 import { API, api } from "@/lib/api";
 
 export default function GalleryView({ onBack, onPrint }) {
   const [creations, setCreations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [pin, setPin] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const closeDetail = () => {
+    setSelected(null);
+    setDeleteMode(false);
+    setPin("");
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await api.delete(`/creations/${selected.id}`, { headers: { "X-Admin-Pin": pin } });
+      setCreations((prev) => prev.filter((c) => c.id !== selected.id));
+      closeDetail();
+      toast.success("Karikatür silindi");
+    } catch (err) {
+      if (err?.response?.status === 401) setPin("");
+      toast.error(
+        err?.response?.status === 401
+          ? "Geçersiz yönetici PIN'i"
+          : err?.response?.status === 429
+          ? "Çok fazla deneme, lütfen biraz bekleyin"
+          : "Silme başarısız"
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     api
@@ -75,7 +106,7 @@ export default function GalleryView({ onBack, onPrint }) {
         <div className="fixed inset-0 z-50 bg-black/85 flex flex-col items-center justify-center p-5" data-testid="gallery-detail-modal">
           <button
             data-testid="gallery-detail-close"
-            onClick={() => setSelected(null)}
+            onClick={closeDetail}
             className="absolute top-5 right-5 h-11 w-11 rounded-full glass-dock flex items-center justify-center active:scale-95 transition-transform"
           >
             <X size={20} weight="bold" color="#fff" />
@@ -102,7 +133,43 @@ export default function GalleryView({ onBack, onPrint }) {
               <DownloadSimple size={20} weight="bold" />
               İndir
             </button>
+            <button
+              data-testid="gallery-delete-btn"
+              onClick={() => setDeleteMode((v) => !v)}
+              className="h-13 px-5 py-3 rounded-full bg-[#FF3B30]/15 text-[#FF3B30] font-medium flex items-center gap-2 active:scale-95 transition-transform"
+            >
+              <Trash size={20} weight="bold" />
+              Sil
+            </button>
           </div>
+          {deleteMode && (
+            <div className="mt-4 w-full max-w-sm glass-dock rounded-2xl p-4" data-testid="delete-confirm-panel">
+              <p className="text-sm text-white/70 mb-3">Silmek için yönetici PIN'i girin:</p>
+              <div className="flex gap-2">
+                <div className="flex-1 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
+                  <LockKey size={18} weight="duotone" color="#FF3B30" />
+                  <Input
+                    data-testid="delete-pin-input"
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Yönetici PIN'i"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value)}
+                    className="border-0 bg-transparent text-white placeholder:text-white/30 focus-visible:ring-0"
+                  />
+                </div>
+                <button
+                  data-testid="confirm-delete-btn"
+                  onClick={confirmDelete}
+                  disabled={!pin || deleting}
+                  className="h-11 px-5 rounded-xl bg-[#FF3B30] text-white font-semibold active:scale-95 transition-transform disabled:opacity-40"
+                >
+                  {deleting ? "Siliniyor..." : "Onayla"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import io
 import logging
@@ -224,7 +225,7 @@ async def create_caricature(request: Request, req: CaricatureRequest):
     elif req.use_event_logo:
         setting = await db.settings.find_one({"key": "event_logo", "is_deleted": False})
         if setting:
-            logo_bytes, _ = get_object(setting["storage_path"])
+            logo_bytes, _ = await asyncio.to_thread(get_object, setting["storage_path"])
 
     logo_b64 = base64.b64encode(logo_bytes).decode("utf-8") if logo_bytes else None
     caricature_bytes = await generate_caricature(req.image_base64, logo_b64, req.logo_placement)
@@ -234,7 +235,7 @@ async def create_caricature(request: Request, req: CaricatureRequest):
 
     creation_id = str(uuid.uuid4())
     path = f"{APP_NAME}/creations/{creation_id}.jpg"
-    result = put_object(path, final_jpg, "image/jpeg")
+    result = await asyncio.to_thread(put_object, path, final_jpg, "image/jpeg")
     created_at = datetime.now(timezone.utc).isoformat()
     await db.creations.insert_one({
         "id": creation_id,
@@ -260,8 +261,12 @@ async def get_creation_image(creation_id: str):
     doc = await db.creations.find_one({"id": creation_id, "is_deleted": False})
     if not doc:
         raise HTTPException(status_code=404, detail="Görsel bulunamadı")
-    data, content_type = get_object(doc["storage_path"])
-    return Response(content=data, media_type="image/jpeg")
+    data, content_type = await asyncio.to_thread(get_object, doc["storage_path"])
+    return Response(
+        content=data,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=86400, immutable"},
+    )
 
 
 @api_router.delete("/creations/{creation_id}")
@@ -290,7 +295,7 @@ async def upload_event_logo(request: Request, file: UploadFile = File(...), x_ad
     ext = "jpg" if fmt == "jpeg" else fmt
     content_type = f"image/{fmt}"
     path = f"{APP_NAME}/logo/{uuid.uuid4()}.{ext}"
-    result = put_object(path, data, content_type)
+    result = await asyncio.to_thread(put_object, path, data, content_type)
     await db.settings.update_many({"key": "event_logo"}, {"$set": {"is_deleted": True}})
     await db.settings.insert_one({
         "key": "event_logo",
@@ -313,7 +318,7 @@ async def get_event_logo_image():
     setting = await db.settings.find_one({"key": "event_logo", "is_deleted": False})
     if not setting:
         raise HTTPException(status_code=404, detail="Logo bulunamadı")
-    data, content_type = get_object(setting["storage_path"])
+    data, content_type = await asyncio.to_thread(get_object, setting["storage_path"])
     return Response(content=data, media_type=setting.get("content_type", content_type))
 
 

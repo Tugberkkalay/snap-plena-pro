@@ -47,6 +47,11 @@ Etkinlik/yazılım lansmanı için fotoğraf çekip, o fotoğrafı şirket logol
 - ✅ Ayarlar penceresine PIN girişi eklendi; yükle/sil butonları PIN girilmeden devre dışı
 - ✅ Test: iteration_3.json — backend 14/14 güvenlik testi, frontend tüm PIN akışları (0 LLM kredisi harcandı)
 - Plena logosu kalıcı yedeği: /app/assets/plena_logo.png
+
+## Galeri Silme + Performans (4. iterasyon)
+- ✅ Galeri detay modalına PIN korumalı "Sil" butonu (delete-confirm-panel, yanlış PIN'de alan temizlenir)
+- ✅ Performans: storage çağrıları asyncio.to_thread'e taşındı (görseller artık paralel yüklenir), /api/images/{id} yanıtlarına Cache-Control eklendi (preview edge'i override eder, production'da etkili)
+- ✅ Test: iteration_4.json — backend 5/5, frontend %100 (0 LLM kredisi)
 - Bilinen sınırlamalar: rate limit bellek içi (restart'ta sıfırlanır, tek pod için yeterli); CORS_ORIGINS env'de "*" (preview edge proxy zaten override ediyor, deploy'da domain'e sabitlenebilir)
 
 ## Backlog / Sonraki Adımlar
