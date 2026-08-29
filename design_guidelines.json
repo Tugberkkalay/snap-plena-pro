@@ -1,0 +1,90 @@
+{
+  "project_type": "event_kiosk_mobile_app",
+  "theme": "Dark Mode Default (The Performance Pro & Retro-Futurism Hybrid)",
+  "typography": {
+    "rules": "Avoid Inter, Roboto, Open Sans. Use tight tracking for headings.",
+    "headings": {
+      "font": "Cabinet Grotesk",
+      "weights": ["700", "900"],
+      "styling": "tracking-tighter leading-none"
+    },
+    "body": {
+      "font": "Outfit",
+      "weights": ["300", "400", "500"],
+      "styling": "tracking-wide leading-relaxed"
+    }
+  },
+  "colors": {
+    "strategy": "High-contrast 'Tactical Minimalism'. Deep Obsidian anchor, Pure White for clarity, Electric Cyan for kinetic action.",
+    "background": "#0A0A0A",
+    "surface": "rgba(255, 255, 255, 0.03)",
+    "primary": "#00E5FF",
+    "primary_hover": "#00B3CC",
+    "accent": "#FF3B30",
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA"
+    },
+    "border": "rgba(255, 255, 255, 0.1)"
+  },
+  "visual_enhancers": {
+    "surfaces": "Use 'Glassmorphism' (Crystal variant) for floating controls: backdrop-blur-2xl bg-black/60 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)].",
+    "buttons": "Pill-shaped, large touch targets (min 56px height). Primary actions get Electric Cyan background with solid Black text for max contrast.",
+    "ai_processing_state": "Use the 'Tracing Beam' effect around the image container, plus a CSS repeating-linear-gradient scanline overlay to sell the 'Tech Launch AI' vibe.",
+    "shutter_effect": "Full screen flash (bg-white opacity 1 to 0 over 300ms) on capture."
+  },
+  "layouts": {
+    "architecture": "Mobile-first, fixed viewport (`h-screen overflow-hidden`). Content must not jump when address bar hides on mobile.",
+    "spacing": "Generous spacing. Use safe-area-inset for iOS bottom bars. Padding `p-6` or `p-8` for panels.",
+    "views": {
+      "attract_screen": "Massive typography. Huge 'TAP TO START' area covering whole screen.",
+      "camera_view": "Video feed fills screen (`object-cover absolute inset-0`). Floating controls in a glassmorphism dock at the bottom.",
+      "print_preview": "Strict 3:2 (landscape) or 2:3 (portrait) aspect ratio container matching 4x6 print. Apply uploaded logo as absolute watermark.",
+      "gallery": "Bento Grid Mode A (Tetris Grid) for recent creations. Asymmetric grid-cols-2."
+    }
+  },
+  "motion": {
+    "interactions": "Framer Motion. whileTap={{ scale: 0.95 }}. Staggered entrances for gallery items.",
+    "transitions": "Use specific properties: `transition: transform 0.2s ease, opacity 0.2s ease`. NEVER use `transition: all`."
+  },
+  "accessibility": {
+    "contrast": "Text over camera feeds MUST have a glassmorphism background or heavy drop-shadow.",
+    "testing": "All interactive and key informational elements MUST include a `data-testid` attribute (e.g., `data-testid=\"shutter-btn\"`)."
+  },
+  "media": {
+    "icons_library": "@phosphor-icons/react (Weight: duotone for UI, bold for primary actions)",
+    "packages_to_install": ["framer-motion", "@phosphor-icons/react", "react-fast-marquee", "sonner"]
+  },
+  "component_instructions": {
+    "camera_capture": "Utilize HTML5 `getUserMedia`. Ensure `facingMode: 'user'` or `'environment'` toggles properly.",
+    "file_uploads": "Hide native `<input type=\"file\">`. Use a custom labeled dropzone/button with Phosphor icons.",
+    "modals_toasts": "Use Shadcn Dialog but apply custom borders/glassmorphism. Use Sonner for all toast notifications (`import { Toaster, toast } from 'sonner'`).",
+    "print_functionality": "Create a dedicated `@media print` CSS block. Hide EVERYTHING except the `.print-container` which holds the 4x6 image. Use `window.print()`."
+  },
+  "image_urls": {
+    "demo_event_background": {
+      "url": "https://images.unsplash.com/photo-1558008258-3256797b43f3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTZ8MHwxfHNlYXJjaHwyfHxzb2Z0d2FyZSUyMGxhdW5jaCUyMGV2ZW50JTIwcGFydHl8ZW58MHx8fHwxNzg4MDA3MDAxfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Tech launch audience. Use as fallback background for attract screen."
+    },
+    "demo_company_logo": {
+      "url": "https://images.pexels.com/photos/15863044/pexels-photo-15863044.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "OpenAI minimal logo. Use to mock the persistent event logo watermark."
+    },
+    "demo_caricature_1": {
+      "url": "https://images.unsplash.com/photo-1764662028086-e74ce491080e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwzfHxsYXVnaGluZyUyMHBlcnNvbiUyMGNhcnRvb24lMjBkcmF3aW5nfGVufDB8fHx8MTc4ODAwNzAwMXww&ixlib=rb-4.1.0&q=85",
+      "description": "Laughing woman. Mocking AI generated caricature in gallery."
+    },
+    "demo_caricature_2": {
+      "url": "https://images.unsplash.com/photo-1643990083739-f2c1a4ee3127?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHxsYXVnaGluZyUyMHBlcnNvbiUyMGNhcnRvb24lMjBkcmF3aW5nfGVufDB8fHx8MTc4ODAwNzAwMXww&ixlib=rb-4.1.0&q=85",
+      "description": "Laughing man BW. Mocking AI generated caricature in gallery."
+    }
+  },
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You MUST NOT apply universal transitions like `transition: all`. Only target specific properties.",
+    "Do not use generic centered layouts for complex screens. Use optical alignment.",
+    "Never use `transparent` backgrounds for headers/dropdowns that overlap content. Always use glassmorphism.",
+    "Never use placeholder image domains (e.g., via.placeholder.com). Use the provided image URLs.",
+    "Implement tactile micro-animations on ALL buttons.",
+    "Design files must use JS, not TSX. Follow standard React JSX syntax but inside .jsx or .js files."
+  ]
+}
