@@ -1,10 +1,18 @@
 import { useRef, useState } from "react";
-import { ArrowCounterClockwise, MagicWand, UploadSimple } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, Flag, MagicWand, Monitor, Stamp, TShirt, UploadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
+
+const PLACEMENTS = [
+  { key: "corner", label: "Köşe Damgası", icon: Stamp },
+  { key: "flag", label: "Bayrak Tutsun", icon: Flag },
+  { key: "banner", label: "Sahne Ekranında", icon: Monitor },
+  { key: "tshirt", label: "Tişört Baskısı", icon: TShirt },
+];
 
 export default function ConfirmView({ photo, eventLogoExists, onGenerate, onRetake }) {
   const [logoMode, setLogoMode] = useState(eventLogoExists ? "event" : "none");
   const [customLogoB64, setCustomLogoB64] = useState(null);
+  const [placement, setPlacement] = useState("corner");
   const fileRef = useRef(null);
 
   const handleLogoFile = (e) => {
@@ -89,6 +97,35 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
         )}
       </div>
 
+      {logoMode !== "none" && (
+        <div className="mt-4">
+          <p className="text-sm text-[#A1A1AA] mb-3">Logo nerede görünsün?</p>
+          <div className="flex flex-wrap gap-2">
+            {PLACEMENTS.map((p) => {
+              const Icon = p.icon;
+              return (
+                <button
+                  key={p.key}
+                  data-testid={`placement-${p.key}`}
+                  onClick={() => setPlacement(p.key)}
+                  className={`h-11 px-4 rounded-full text-sm font-medium flex items-center gap-2 transition-colors active:scale-95 ${
+                    placement === p.key ? "bg-[#00E5FF] text-black" : "glass-dock text-white"
+                  }`}
+                >
+                  <Icon size={16} weight={placement === p.key ? "bold" : "duotone"} />
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-white/60 mt-2">
+            {placement === "corner"
+              ? "Logo, baskının sağ alt köşesine net ve bozulmadan eklenir."
+              : "Yapay zekâ logoyu sahnenin içine çizer — sonuç her üretimde biraz farklılık gösterebilir."}
+          </p>
+        </div>
+      )}
+
       <div className="flex gap-3 mt-6">
         <button
           data-testid="retake-btn"
@@ -100,7 +137,7 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
         </button>
         <button
           data-testid="generate-btn"
-          onClick={() => onGenerate({ logoMode, customLogoB64 })}
+          onClick={() => onGenerate({ logoMode, customLogoB64, placement })}
           className="flex-1 h-14 rounded-full bg-[#00E5FF] text-black font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform"
         >
           <MagicWand size={20} weight="bold" />

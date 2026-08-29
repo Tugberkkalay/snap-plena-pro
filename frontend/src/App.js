@@ -52,13 +52,14 @@ function App() {
     setView("confirm");
   };
 
-  const handleGenerate = async ({ logoMode, customLogoB64 }) => {
+  const handleGenerate = async ({ logoMode, customLogoB64, placement }) => {
     setView("processing");
     try {
       const res = await api.post("/caricature", {
         image_base64: photo.split(",")[1],
         use_event_logo: logoMode === "event",
         logo_base64: logoMode === "custom" ? customLogoB64.split(",")[1] : null,
+        logo_placement: logoMode === "none" ? "corner" : placement || "corner",
       });
       setResult(res.data);
       setView("result");

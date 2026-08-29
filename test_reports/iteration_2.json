@@ -1,0 +1,40 @@
+{
+  "summary": "Focused test of the NEW logo_placement feature (corner|flag|banner|tshirt) on KarikaBooth. Backend: new suite /app/backend/tests/test_logo_placement.py (5 tests, all passed) + 8 regression tests from the existing suite (all passed, cost-free ones only). Exactly 2 real Gemini calls were spent as budgeted: (1) backend request WITHOUT logo_placement -> backward compat, 1200x1800 JPEG with the white rounded plate + Plena Pro logo verified by pixel probe at (840,1620)-(860,1636) AND visually; (2) frontend E2E with placement='banner' -> network payload asserted {logo_placement:'banner', use_event_logo:true, logo_base64:null}, result-view image natural dims 1200x1800, Gemini drew the Plena Pro logo on the stage LED screen with exact colors/text, and a pixel probe on the persisted artifact confirmed NO corner plate was composited for the scene placement. Frontend UI: settings dialog event-logo-preview loads the real Plena Pro logo (naturalSize 1515x570); confirm view has logo-mode-event enabled + pre-selected; 'Logo nerede görünsün?' section shows all 4 placement pills with corner selected by default (cyan); selecting flag/banner/tshirt highlights the pill, un-highlights corner and swaps the hint to the 'sahnenin içine çizer' text; corner re-select restores the 'sağ alt köşesine net' hint; 'Logosuz' hides the whole placement section (pill+heading count 0) and re-selecting 'Etkinlik Logosu' restores it with corner selected. 0 console errors, 0 error elements, 0px horizontal overflow at 390x844.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/caricature", "issue": "logo_placement is an unvalidated `str`. Any unknown value (typo, different casing e.g. 'Corner', or a stale client sending 'sticker') silently produces an image with NO logo at all: the scene prompt is skipped (placement not in PLACEMENT_PROMPTS) AND the corner overlay is skipped (placement != 'corner'), so a paid generation returns an unbranded print with a 200 OK. Use Literal['corner','flag','banner','tshirt'] (422 on invalid) or fall back to 'corner'."},
+      {"endpoint": "POST /api/caricature (scene placements)", "issue": "For flag/banner/tshirt there is no verification/fallback: if Gemini ignores or garbles the logo, the print ships with zero branding because the corner watermark is deliberately disabled. Consider an optional 'also add corner stamp' toggle or a fallback corner composite for scene modes."},
+      {"endpoint": "n/a - pre-existing", "issue": "Carry-over from iteration 1 (still open): blocking `requests` storage I/O inside async handlers, no pagination on /api/creations, no size/real-image cap on image_base64, no rate limiting."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Confirm view - placement hint", "issues": ["Hint paragraph uses text-white/40 on #0A0A0A (approx 2.6:1 contrast) - below WCAG AA for the only explanatory copy about what each placement does; bump to white/60-70."]},
+      {"screen": "Confirm view (mobile 390x844)", "issues": ["With the placement section open the photo preview shrinks and the whole column becomes scrollable; content is reachable and no horizontal overflow, but the two-row pill stack pushes the primary 'Karikatür Oluştur' CTA near the bottom edge. Cosmetic/kiosk-ergonomics only."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_logo_placement.py", "/app/backend/tests/backend_test.py"],
+  "action_items": [
+    "Constrain CaricatureRequest.logo_placement to Literal['corner','flag','banner','tshirt'] so an unknown value cannot silently drop the logo from a paid generation.",
+    "Consider a branding fallback for scene placements when the model does not render the logo (optional corner stamp).",
+    "Raise the placement hint text contrast from white/40 to ~white/60.",
+    "WARNING for future runs: /app/backend/tests/backend_test.py contains test_delete_event_logo + test_zz_restore_event_logo_for_frontend which DELETE the real Plena Pro event logo and re-upload a synthetic cyan TEST_logo.png. Those two tests were intentionally skipped this run to preserve the user's logo; they should be made non-destructive (snapshot /api/logo-image and restore the original bytes)."
+  ],
+  "critical_code_review_comments": [
+    "server.py CaricatureRequest.logo_placement: str with no enum -> silent no-logo output for any unrecognized value; also case-sensitive. Validate with Literal/Enum.",
+    "server.py create_caricature: corner_logo = logo_bytes if placement == 'corner' else None couples the overlay decision to an unvalidated string; derive it from the validated enum instead.",
+    "generate_caricature appends the logo as a second ImageContent only when both logo_b64 and a known scene placement exist - correct, and use_event_logo=false + no logo_base64 correctly degrades to a plain caricature (verified by code review, no LLM call spent).",
+    "ConfirmView keeps the previously chosen placement in state when logoMode toggles to 'none' and back - harmless today since App.js forces 'corner' for logoMode==='none', but the coupling is implicit and undocumented."
+  ],
+  "updated_files": ["/app/backend/tests/test_logo_placement.py"],
+  "success_rate": {"backend": "100% (5/5 new placement tests, 8/8 cost-free regression tests)", "frontend": "100% (10/10 placement UI + E2E assertions)"},
+  "seed_data_creation": "2 new creations: c9ad1c09-908f-4220-8b30-37c8c3740937 (corner/backward-compat) and 2a608e14-b028-4101-850c-695bb7c75928 (banner scene placement, id also written to /tmp/scene_creation_id.txt for the scene assertion). Synthetic face at /tmp/test_face.png. Plena Pro event logo left untouched.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "N/A - app has no auth; /app/memory/test_credentials.md is an empty template.",
+  "context_for_next_testing_agent": "New placement suite: `cd /app/backend && python -m pytest tests/test_logo_placement.py -n 0 -k 'schema or wrong_type or scene'` is FREE (no LLM); only test_backward_compat_default_corner_overlay spends one real Gemini call (~10s). The scene test reads /tmp/scene_creation_id.txt (id of a flag/banner creation) and skips if absent. pytest.ini forces -n 2 --dist loadscope, so serial runs need `-n 0` (NOT -p no:xdist). Camera view in headless mode gets a fake green stream, so wait for [data-testid=photo-file-input] with state='attached' (it is display:none) and set_input_files. Do NOT run backend_test.py's test_delete_event_logo / test_zz_restore_event_logo tests: they overwrite the user's real Plena Pro logo with a synthetic one. Note the preview backend also receives traffic from other clients, so /api/creations[0] is not necessarily your creation - always use the id returned by your own request.",
+  "rca_of_the_issue": "No functional defect found in the logo_placement feature. Only robustness gap: logo_placement is not enum-validated, so an out-of-vocabulary value bypasses both the scene prompt and the corner composite, yielding a logo-less print with HTTP 200 (verified by code path analysis, not by spending an extra generation call)."
+}

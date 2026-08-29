@@ -32,6 +32,13 @@ Etkinlik/yazılım lansmanı için fotoğraf çekip, o fotoğrafı şirket logol
 - ✅ Test: iteration_1.json — backend 16/16, frontend %100
 - ✅ Geçersiz/aşırı büyük görsel doğrulaması (LLM kredisi koruması)
 
+## Logo Yerleşim Özelliği (2. iterasyon)
+- ✅ Plena Pro logosu (1515x570 şeffaf PNG) sabit etkinlik logosu olarak yüklendi
+- ✅ logo_placement seçenekleri: corner (PIL, beyaz plaka üstünde köşe damgası) | flag (bayrak tutar) | banner (sahne LED ekranı) | tshirt (tişört baskısı)
+- ✅ Sahne yerleşimlerinde logo Gemini'ye 2. referans görsel olarak gönderilir (PLACEMENT_PROMPTS), köşe bindirme yapılmaz
+- ✅ Literal enum doğrulaması (geçersiz değer → 422, logosuz baskı riski yok)
+- ✅ Test: iteration_2.json — backend 13/13, frontend 10/10 (banner yerleşimi gerçek üretimle E2E doğrulandı)
+
 ## Backlog / Sonraki Adımlar
 - P1: Kalabalık etkinlik için kiosk/tam ekran kilidi modu
 - P1: QR kod ile misafirin karikatürünü telefonuna indirmesi

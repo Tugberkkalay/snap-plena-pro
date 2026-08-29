@@ -5,14 +5,14 @@ import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 import requests
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorClient
-from PIL import Image
+from PIL import Image, ImageDraw
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 
@@ -49,6 +49,22 @@ CARICATURE_PROMPT = (
     "Portrait orientation composition (2:3 aspect ratio). High detail, poster quality. "
     "Do not add any text, letters, numbers, watermarks or logos to the image."
 )
+
+PLACEMENT_PROMPTS = {
+    "flag": (
+        "The second image is the official brand logo. Draw the main person proudly holding up and waving "
+        "a small hand flag on a stick; the flag is clean white fabric displaying this exact logo, "
+        "large and clearly readable."
+    ),
+    "banner": (
+        "The second image is the official brand logo. In the stage background, add a large glowing LED "
+        "screen banner prominently displaying this exact logo on a light background, clearly readable."
+    ),
+    "tshirt": (
+        "The second image is the official brand logo. Dress the main person in a clean white t-shirt "
+        "with this exact logo printed large on the chest, clearly readable."
+    ),
+}
 
 
 def init_storage(force: bool = False):
@@ -89,14 +105,23 @@ def get_object(path: str) -> tuple:
     return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 
-async def generate_caricature(photo_b64: str) -> bytes:
+async def generate_caricature(photo_b64: str, logo_b64: Optional[str] = None, placement: str = "corner") -> bytes:
+    prompt = CARICATURE_PROMPT
+    files = [ImageContent(photo_b64)]
+    if logo_b64 and placement in PLACEMENT_PROMPTS:
+        prompt += (
+            " EXCEPTION to the no-logo rule: " + PLACEMENT_PROMPTS[placement] +
+            " Reproduce the logo exactly as provided: same colors, same text, same proportions. "
+            "Do not distort, recolor, redraw or misspell it."
+        )
+        files.append(ImageContent(logo_b64))
     chat = LlmChat(
         api_key=EMERGENT_KEY,
         session_id=str(uuid.uuid4()),
         system_message="You are an expert caricature illustrator.",
     )
     chat.with_model("gemini", "gemini-3.1-flash-image-preview").with_params(modalities=["image", "text"])
-    msg = UserMessage(text=CARICATURE_PROMPT, file_contents=[ImageContent(photo_b64)])
+    msg = UserMessage(text=prompt, file_contents=files)
     text, images = await chat.send_message_multimodal_response(msg)
     if not images:
         logger.error(f"Gemini returned no image. Text: {str(text)[:200]}")
@@ -121,8 +146,13 @@ def compose_print_image(caricature_bytes: bytes, logo_bytes: Optional[bytes]) ->
         if logo.height > int(CANVAS_H * 0.14):
             ratio = int(CANVAS_H * 0.14) / logo.height
             logo = logo.resize((max(1, round(logo.width * ratio)), int(CANVAS_H * 0.14)), Image.LANCZOS)
-        pos = (CANVAS_W - logo.width - 48, CANVAS_H - logo.height - 48)
-        canvas.paste(logo, pos, logo)
+        pad = 20
+        plate = Image.new("RGBA", (logo.width + pad * 2, logo.height + pad * 2), (0, 0, 0, 0))
+        d = ImageDraw.Draw(plate)
+        d.rounded_rectangle([0, 0, plate.width - 1, plate.height - 1], radius=22, fill=(255, 255, 255, 235))
+        plate.paste(logo, (pad, pad), logo)
+        pos = (CANVAS_W - plate.width - 40, CANVAS_H - plate.height - 40)
+        canvas.paste(plate, pos, plate)
 
     out = io.BytesIO()
     canvas.save(out, format="JPEG", quality=92, dpi=(300, 300))
@@ -133,6 +163,7 @@ class CaricatureRequest(BaseModel):
     image_base64: str
     use_event_logo: bool = True
     logo_base64: Optional[str] = None
+    logo_placement: Literal["corner", "flag", "banner", "tshirt"] = "corner"
 
 
 class CreationOut(BaseModel):
@@ -157,8 +188,6 @@ async def create_caricature(req: CaricatureRequest):
     except Exception:
         raise HTTPException(status_code=400, detail="Geçersiz görsel verisi")
 
-    caricature_bytes = await generate_caricature(req.image_base64)
-
     logo_bytes = None
     if req.logo_base64:
         try:
@@ -170,7 +199,11 @@ async def create_caricature(req: CaricatureRequest):
         if setting:
             logo_bytes, _ = get_object(setting["storage_path"])
 
-    final_jpg = compose_print_image(caricature_bytes, logo_bytes)
+    logo_b64 = base64.b64encode(logo_bytes).decode("utf-8") if logo_bytes else None
+    caricature_bytes = await generate_caricature(req.image_base64, logo_b64, req.logo_placement)
+
+    corner_logo = logo_bytes if req.logo_placement == "corner" else None
+    final_jpg = compose_print_image(caricature_bytes, corner_logo)
 
     creation_id = str(uuid.uuid4())
     path = f"{APP_NAME}/creations/{creation_id}.jpg"
