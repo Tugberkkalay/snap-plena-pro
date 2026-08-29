@@ -2,14 +2,17 @@ import base64
 import io
 import logging
 import os
+import time
 import uuid
+from collections import defaultdict, deque
 from datetime import datetime, timezone
+from hmac import compare_digest
 from pathlib import Path
 from typing import List, Literal, Optional
 
 import requests
 from dotenv import load_dotenv
-from fastapi import APIRouter, FastAPI, File, HTTPException, UploadFile
+from fastapi import APIRouter, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from PIL import Image, ImageDraw
@@ -36,6 +39,26 @@ STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
 EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
 APP_NAME = "karika-booth"
 storage_key = None
+ADMIN_PIN = os.environ.get("ADMIN_PIN")
+
+RATE_BUCKETS = defaultdict(deque)
+
+
+def check_rate_limit(request: Request, key: str, limit: int, window: int = 60):
+    ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "?")).split(",")[0].strip()
+    bucket = RATE_BUCKETS[f"{key}:{ip}"]
+    now = time.monotonic()
+    while bucket and now - bucket[0] > window:
+        bucket.popleft()
+    if len(bucket) >= limit:
+        raise HTTPException(status_code=429, detail="Çok fazla istek, lütfen biraz bekleyip tekrar deneyin")
+    bucket.append(now)
+
+
+def verify_admin_pin(request: Request, supplied_pin: Optional[str]):
+    check_rate_limit(request, "admin", 10)
+    if not ADMIN_PIN or not compare_digest(supplied_pin or "", ADMIN_PIN):
+        raise HTTPException(status_code=401, detail="Geçersiz yönetici PIN'i")
 
 CANVAS_W, CANVAS_H = 1200, 1800  # 4x6 inch portrait @ 300 DPI
 
@@ -177,7 +200,8 @@ async def root():
 
 
 @api_router.post("/caricature")
-async def create_caricature(req: CaricatureRequest):
+async def create_caricature(request: Request, req: CaricatureRequest):
+    check_rate_limit(request, "caricature", 5)
     try:
         raw = base64.b64decode(req.image_base64)
         if len(raw) > 15 * 1024 * 1024:
@@ -192,6 +216,9 @@ async def create_caricature(req: CaricatureRequest):
     if req.logo_base64:
         try:
             logo_bytes = base64.b64decode(req.logo_base64)
+            if len(logo_bytes) > 8 * 1024 * 1024:
+                raise ValueError("too large")
+            Image.open(io.BytesIO(logo_bytes)).verify()
         except Exception:
             raise HTTPException(status_code=400, detail="Geçersiz logo verisi")
     elif req.use_event_logo:
@@ -238,7 +265,8 @@ async def get_creation_image(creation_id: str):
 
 
 @api_router.delete("/creations/{creation_id}")
-async def delete_creation(creation_id: str):
+async def delete_creation(request: Request, creation_id: str, x_admin_pin: Optional[str] = Header(None)):
+    verify_admin_pin(request, x_admin_pin)
     res = await db.creations.update_one({"id": creation_id}, {"$set": {"is_deleted": True}})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Görsel bulunamadı")
@@ -246,22 +274,28 @@ async def delete_creation(creation_id: str):
 
 
 @api_router.post("/settings/logo")
-async def upload_event_logo(file: UploadFile = File(...)):
-    if not (file.content_type or "").startswith("image/"):
-        raise HTTPException(status_code=400, detail="Sadece görsel dosyaları yüklenebilir")
+async def upload_event_logo(request: Request, file: UploadFile = File(...), x_admin_pin: Optional[str] = Header(None)):
+    verify_admin_pin(request, x_admin_pin)
     data = await file.read()
     if len(data) > 8 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Dosya çok büyük (max 8MB)")
-    ext = (file.filename or "logo.png").rsplit(".", 1)[-1].lower()
-    if ext not in ("png", "jpg", "jpeg", "webp"):
-        ext = "png"
+    try:
+        pil = Image.open(io.BytesIO(data))
+        pil.verify()
+        fmt = (pil.format or "").lower()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Geçersiz görsel dosyası")
+    if fmt not in ("png", "jpeg", "webp"):
+        raise HTTPException(status_code=400, detail="Sadece PNG, JPEG veya WebP yüklenebilir")
+    ext = "jpg" if fmt == "jpeg" else fmt
+    content_type = f"image/{fmt}"
     path = f"{APP_NAME}/logo/{uuid.uuid4()}.{ext}"
-    result = put_object(path, data, file.content_type)
+    result = put_object(path, data, content_type)
     await db.settings.update_many({"key": "event_logo"}, {"$set": {"is_deleted": True}})
     await db.settings.insert_one({
         "key": "event_logo",
         "storage_path": result["path"],
-        "content_type": file.content_type,
+        "content_type": content_type,
         "is_deleted": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
@@ -284,7 +318,8 @@ async def get_event_logo_image():
 
 
 @api_router.delete("/settings/logo")
-async def delete_event_logo():
+async def delete_event_logo(request: Request, x_admin_pin: Optional[str] = Header(None)):
+    verify_admin_pin(request, x_admin_pin)
     await db.settings.update_many({"key": "event_logo"}, {"$set": {"is_deleted": True}})
     return {"ok": True}
 
@@ -293,10 +328,9 @@ app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
     allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Admin-Pin"],
 )
 
 

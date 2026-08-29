@@ -39,6 +39,16 @@ Etkinlik/yazılım lansmanı için fotoğraf çekip, o fotoğrafı şirket logol
 - ✅ Literal enum doğrulaması (geçersiz değer → 422, logosuz baskı riski yok)
 - ✅ Test: iteration_2.json — backend 13/13, frontend 10/10 (banner yerleşimi gerçek üretimle E2E doğrulandı)
 
+## Güvenlik Sıkılaştırması (3. iterasyon)
+- ✅ Admin PIN koruması: POST/DELETE /api/settings/logo ve DELETE /api/creations/{id} artık X-Admin-Pin header ister (hmac.compare_digest, zamanlama-güvenli). PIN: backend/.env ADMIN_PIN (bkz. test_credentials.md)
+- ✅ IP bazlı rate limiting (in-memory): caricature 5/dk, admin işlemleri 10/dk → 429
+- ✅ Logo yüklemede PIL ile gerçek bayt doğrulaması (sahte content-type → 400, sadece png/jpeg/webp); caricature logo_base64 de PIL ile doğrulanır
+- ✅ CORS: allow_credentials kaldırıldı, metodlar GET/POST/DELETE/OPTIONS, header'lar Content-Type + X-Admin-Pin ile sınırlandı
+- ✅ Ayarlar penceresine PIN girişi eklendi; yükle/sil butonları PIN girilmeden devre dışı
+- ✅ Test: iteration_3.json — backend 14/14 güvenlik testi, frontend tüm PIN akışları (0 LLM kredisi harcandı)
+- Plena logosu kalıcı yedeği: /app/assets/plena_logo.png
+- Bilinen sınırlamalar: rate limit bellek içi (restart'ta sıfırlanır, tek pod için yeterli); CORS_ORIGINS env'de "*" (preview edge proxy zaten override ediyor, deploy'da domain'e sabitlenebilir)
+
 ## Backlog / Sonraki Adımlar
 - P1: Kalabalık etkinlik için kiosk/tam ekran kilidi modu
 - P1: QR kod ile misafirin karikatürünü telefonuna indirmesi

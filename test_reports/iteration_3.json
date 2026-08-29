@@ -1,0 +1,40 @@
+{
+  "summary": "Security-hardening focused run (iteration 3) on KarikaBooth. Created /app/backend/tests/test_security.py (14 tests, 13 pass first run, 1 CORS test adjusted to hit the app directly because the preview edge proxy rewrites CORS headers -> then passed => 14/14). Verified: admin PIN gating on POST/DELETE /api/settings/logo (401 no-PIN, 401 wrong-PIN), PIL image validation (spoofed image/png script file -> 400 'Geçersiz görsel dosyası'; real GIF -> 400 'Sadece PNG, JPEG veya WebP yüklenebilir'), correct PIN + real Plena PNG -> 200 with persistence verified via GET /settings/logo + GET /logo-image byte/format check, admin rate limit 10/min -> 429 'Çok fazla istek...', caricature rate limit 5/min via invalid-base64 bodies (400 x5 then 429, ZERO Gemini calls / no LLM spend), free regressions (GET /api/, /settings/logo, /logo-image, /creations, /images/{id} 200, unknown id 404). Frontend: settings dialog PIN input (type=password), upload-logo-btn disabled while PIN empty and enabled after typing, wrong PIN 111111 -> Turkish toast 'Geçersiz yönetici PIN'i' (logo unchanged), correct PIN 574913 -> 200 + 'Etkinlik logosu kaydedildi' toast + event-logo-preview refreshed with cache-bust. Regression flow attract -> tap-to-start -> camera-view -> photo-file-input -> confirm-view with logo pills + placement pills OK (generate-btn NOT clicked). FINAL STATE: real Plena logo is set (md5 of GET /api/logo-image == md5 /app/assets/plena_logo.png).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "DELETE /api/creations/{id}", "issue": "Still completely unauthenticated and un-rate-limited: any anonymous caller can soft-delete every gallery creation (loop over GET /api/creations ids). This is the same class of 'unprotected admin action' the hardening pass was meant to close - it should require X-Admin-Pin (verify_admin_pin) like the logo mutations.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "CORS", "issue": "backend/.env still has CORS_ORIGINS=\"*\" so allow_origins is wildcard (methods/headers ARE tightened and allow_credentials is absent - verified locally on :8001). Additionally, on the preview public URL the edge proxy overrides CORS entirely (access-control-allow-origin: *, allow-headers: *, allow-methods includes PUT/PATCH), so app-level tightening is not observable externally in this environment."},
+      {"endpoint": "verify_admin_pin", "issue": "check_rate_limit('admin',10) is called BEFORE the PIN comparison, so failed attempts consume the same budget as legitimate ones; a genuine operator behind a shared NAT/egress IP can be locked out for 60s by someone else's brute-force attempts. Consider a separate/longer lockout for failed PINs and a larger budget for successful ones."},
+      {"endpoint": "rate limiting", "issue": "RATE_BUCKETS is per-process in-memory: resets on any backend reload/restart (observed: editing a file under /app/backend/tests triggers uvicorn reload and clears buckets) and would not be shared across multiple replicas. Acceptable for a single-booth event, but note the limitation."},
+      {"endpoint": "POST /api/settings/logo", "issue": "No pixel-dimension / decompression-bomb guard (only 8MB byte cap + verify()); a small highly-compressed PNG could still be expensive when composited. Low risk."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Settings dialog", "issues": ["Minor: remove-logo-btn (trash) is not disabled when the PIN field is empty, unlike upload-logo-btn; clicking it fires a request that always 401s and burns 1 of the 10/min admin budget. Consider disabling it until a PIN is entered."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_security.py", "/app/test_reports/pytest/security_results.xml"],
+  "action_items": [
+    "Protect DELETE /api/creations/{id} with verify_admin_pin (+ send X-Admin-Pin from any UI that deletes creations).",
+    "Optionally set CORS_ORIGINS in backend/.env to the actual frontend origin instead of '*'.",
+    "Optionally disable remove-logo-btn while the PIN input is empty."
+  ],
+  "critical_code_review_comments": [
+    "server.py: DELETE /api/creations/{id} is the only remaining state-mutating endpoint with no auth and no rate limit - inconsistent with the new admin gating.",
+    "Rate limiting and PIN verification are coupled in verify_admin_pin; separating them would let failed-PIN attempts be throttled more aggressively than legitimate admin traffic.",
+    "server.py is 348 lines - fine for now, no split needed."
+  ],
+  "updated_files": ["/app/backend/tests/test_security.py"],
+  "success_rate": {"backend": "100% (14/14 security+regression tests)", "frontend": "100% (all PIN-gating and regression flow assertions passed)"},
+  "seed_data_creation": "No new DB data beyond re-uploading the real Plena logo (/app/assets/plena_logo.png) as the active event logo - verified identical md5 at end of run.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "ADMIN_PIN=574913 (from /app/memory/test_credentials.md, matches backend/.env)",
+  "context_for_next_testing_agent": "Use /app/backend/tests/test_security.py. It is ordered so the deliberate admin 429 burst runs LAST (TestAdminPinAndUpload::test_08) and the real Plena logo is re-uploaded in test_07 before the budget is exhausted - keep that order. Admin bucket = 10/min per IP, caricature = 5/min per IP; wait 60s+ after running the suite before any other admin call. Never send a VALID image to POST /api/caricature (LLM credits); invalid base64 returns 400 after the rate check, which is free. The CORS test intentionally targets http://localhost:8001 because the preview edge proxy rewrites CORS response headers. Editing files under /app/backend triggers a uvicorn reload which clears rate buckets.",
+  "rca_of_the_issue": "One transient false negative during frontend testing: the 'Etkinlik logosu kaydedildi' sonner toast was missed when the body text was only sampled once 6s after upload (toast auto-dismisses ~4s). Re-ran with 300ms polling: toast appears in ~0.6s, POST /api/settings/logo returns 200. Not a product bug - test timing only."
+}
