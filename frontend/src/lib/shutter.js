@@ -1,29 +1,44 @@
+let ctx;
+
+function getCtx() {
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
+export function unlockAudio() {
+  try {
+    getCtx();
+  } catch (e) {
+    // audio not available
+  }
+}
+
 export function playShutter() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const audio = getCtx();
     const click = (t, dur, freq, vol) => {
-      const size = Math.floor(ctx.sampleRate * dur);
-      const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
+      const size = Math.floor(audio.sampleRate * dur);
+      const buffer = audio.createBuffer(1, size, audio.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < size; i++) {
         data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (size * 0.12));
       }
-      const src = ctx.createBufferSource();
+      const src = audio.createBufferSource();
       src.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
+      const filter = audio.createBiquadFilter();
       filter.type = "bandpass";
       filter.frequency.value = freq;
       filter.Q.value = 1.2;
-      const gain = ctx.createGain();
+      const gain = audio.createGain();
       gain.gain.value = vol;
       src.connect(filter);
       filter.connect(gain);
-      gain.connect(ctx.destination);
-      src.start(ctx.currentTime + t);
+      gain.connect(audio.destination);
+      src.start(audio.currentTime + t);
     };
     click(0, 0.045, 2600, 0.6);
     click(0.075, 0.09, 1100, 0.5);
-    setTimeout(() => ctx.close(), 500);
   } catch (e) {
     // audio not available, silent fail
   }

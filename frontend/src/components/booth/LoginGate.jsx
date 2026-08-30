@@ -7,7 +7,7 @@ import EyeTracking from "@/components/ui/eye-tracking";
 import SnapMark from "@/components/booth/SnapMark";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
-import { playShutter } from "@/lib/shutter";
+import { playShutter, unlockAudio } from "@/lib/shutter";
 
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
 const MODEL_URL =
@@ -144,6 +144,7 @@ export default function LoginGate({ onUnlock }) {
   }, [verifyFrame]);
 
   const startScan = async () => {
+    unlockAudio();
     setStage("scanning");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({

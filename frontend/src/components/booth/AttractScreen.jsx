@@ -80,12 +80,6 @@ export default function AttractScreen({ onStart, onGallery, onSettings, onLogout
             <SnapMark size={52} className="snap-mark-hero" />
           </motion.span>
         </motion.h1>
-        <motion.div
-          className="pointer-events-none fixed inset-0 z-30 bg-white"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0, 0.55, 0] }}
-          transition={{ duration: 1.5, times: [0, 0.7, 0.78, 1] }}
-        />
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
