@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, HandPalm, LockKey } from "@phosphor-icons/react";
+import { CheckCircle, LockKey, Scan } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { FilesetResolver, GestureRecognizer } from "@mediapipe/tasks-vision";
 import EyeTracking from "@/components/ui/eye-tracking";
@@ -271,11 +271,11 @@ export default function LoginGate({ onUnlock }) {
               glow={stage === "verifying"}
             />
             <div className="mt-8 flex items-center gap-2 text-[#A1A1AA] text-sm">
-              <HandPalm size={22} weight="duotone" color="#00E5FF" />
+              <Scan size={22} weight="duotone" color="#00E5FF" />
               <span data-testid="gesture-hint">
                 {stage === "verifying"
                   ? "Doğrulanıyor..."
-                  : "Başparmak + işaret parmağınla 'L' işareti yap"}
+                  : "Ne yapman gerektiğini biliyorsun..."}
               </span>
             </div>
             <div className="mt-4 w-56 h-1.5 rounded-full bg-white/10 overflow-hidden">
