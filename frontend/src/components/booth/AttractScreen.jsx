@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { GearSix, Images, Sparkle } from "@phosphor-icons/react";
+import { GearSix, Images } from "@phosphor-icons/react";
+import SnapMark from "@/components/booth/SnapMark";
 
 export default function AttractScreen({ onStart, onGallery, onSettings }) {
   return (
@@ -12,9 +13,9 @@ export default function AttractScreen({ onStart, onGallery, onSettings }) {
       />
       <header className="relative z-10 flex items-center justify-between px-6 pt-6">
         <div className="flex items-center gap-2">
-          <Sparkle size={22} weight="duotone" color="#00E5FF" />
-          <span className="font-display font-800 tracking-tighter text-lg font-bold">
-            KARİKA<span className="text-[#00E5FF]">BOOTH</span>
+          <SnapMark size={22} />
+          <span className="font-display tracking-tighter text-lg font-bold">
+            PLENA <span className="text-[#00E5FF]">SNAP</span>
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -43,26 +44,31 @@ export default function AttractScreen({ onStart, onGallery, onSettings }) {
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-[#00E5FF] tracking-[0.3em] text-xs sm:text-sm mb-4 uppercase"
+          className="text-white/60 tracking-[0.4em] text-xs sm:text-sm mb-4 uppercase"
         >
-          Lansman Özel Deneyimi
+          Plena Studio presents
         </motion.p>
         <motion.h1
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="font-display font-black tracking-tighter leading-none text-4xl sm:text-5xl lg:text-6xl attract-glow"
+          className="font-display font-black tracking-tighter leading-none text-4xl sm:text-5xl lg:text-6xl attract-glow flex items-center gap-3 sm:gap-4"
         >
-          FOTOĞRAFINI
-          <br />
-          <span className="text-[#00E5FF]">KARİKATÜRE</span>
-          <br />
-          DÖNÜŞTÜR
+          SNAP
+          <SnapMark size={52} className="snap-mark-hero" />
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.25 }}
+          transition={{ delay: 0.2 }}
+          className="text-[#00E5FF] tracking-[0.3em] text-xs sm:text-sm mt-4 uppercase"
+        >
+          {"HR Vision '26 Experience"}
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
           className="text-[#A1A1AA] text-base mt-6 max-w-md font-light"
         >
           Fotoğrafını çek, yapay zekâ seni karikatüre çevirsin, logolu 10x15 baskını anında al.
@@ -82,7 +88,7 @@ export default function AttractScreen({ onStart, onGallery, onSettings }) {
       </button>
 
       <footer className="relative z-10 px-6 pb-6 text-[#A1A1AA] text-xs tracking-wide">
-        AI destekli · 10x15 cm baskıya hazır · Tam responsive
+        PLENA STUDIO · AI destekli · 10x15 cm baskıya hazır
       </footer>
     </div>
   );

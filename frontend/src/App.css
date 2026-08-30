@@ -91,6 +91,15 @@ body {
     animation: pulse-ring 2s ease-out infinite;
 }
 
+.snap-mark-hero {
+    animation: snap-pop 3s ease-in-out infinite;
+}
+
+@keyframes snap-pop {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.12) rotate(8deg); }
+}
+
 @keyframes pulse-ring {
     0% { transform: scale(1); opacity: 0.6; }
     100% { transform: scale(1.6); opacity: 0; }

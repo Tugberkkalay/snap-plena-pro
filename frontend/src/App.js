@@ -63,7 +63,7 @@ function App() {
       });
       setResult(res.data);
       setView("result");
-      toast.success("Karikatürünüz hazır!");
+      toast.success("SNAP'iniz hazır!");
     } catch (e) {
       console.error(e);
       toast.error(e?.response?.data?.detail || "Karikatür oluşturulamadı, lütfen tekrar deneyin");

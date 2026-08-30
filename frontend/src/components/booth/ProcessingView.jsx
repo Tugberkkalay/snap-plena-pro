@@ -24,7 +24,7 @@ export default function ProcessingView({ photo }) {
         <div className="scan-beam" />
       </div>
       <h2 className="font-display font-bold tracking-tighter text-lg md:text-lg mt-8 text-[#00E5FF]">
-        Yapay Zekâ Çiziyor
+        SNAP Hazırlanıyor
       </h2>
       <p className="text-[#A1A1AA] text-sm mt-2 h-5" data-testid="processing-message">
         {MESSAGES[msgIndex]}

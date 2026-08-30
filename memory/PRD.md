@@ -52,6 +52,15 @@ Etkinlik/yazılım lansmanı için fotoğraf çekip, o fotoğrafı şirket logol
 - ✅ Galeri detay modalına PIN korumalı "Sil" butonu (delete-confirm-panel, yanlış PIN'de alan temizlenir)
 - ✅ Performans: storage çağrıları asyncio.to_thread'e taşındı (görseller artık paralel yüklenir), /api/images/{id} yanıtlarına Cache-Control eklendi (preview edge'i override eder, production'da etkili)
 - ✅ Test: iteration_4.json — backend 5/5, frontend %100 (0 LLM kredisi)
+
+## PLENA SNAP Rebrand (5. iterasyon)
+- ✅ Marka hiyerarşisi (hibrit): Açılışta "PLENA STUDIO presents / SNAP / HR VISION '26 Experience", arayüzde kompakt "PLENA SNAP"
+- ✅ SnapMark: Plena bar renklerinden (mavi/sarı/yeşil/kırmızı) türetilen flaş/deklanşör SVG işareti (components/booth/SnapMark.jsx + public/snap-icon.svg favicon)
+- ✅ Sekme başlığı "PLENA SNAP · HR VISION '26", meta description, favicon
+- ✅ Metinler: "SNAP Hazırlanıyor", "SNAP'in Hazır!", "SNAP Galerisi", indirme dosya adı plena-snap-{id}.jpg
+- ✅ Baskı çıktısı değişmedi (kullanıcı tercihi: sadece Plena logosu)
+- Renk kimliği: koyu + cyan korundu (kullanıcı tercihi)
+- İleride: snap.plena.pro özel domain deploy sırasında bağlanabilir
 - Bilinen sınırlamalar: rate limit bellek içi (restart'ta sıfırlanır, tek pod için yeterli); CORS_ORIGINS env'de "*" (preview edge proxy zaten override ediyor, deploy'da domain'e sabitlenebilir)
 
 ## Backlog / Sonraki Adımlar

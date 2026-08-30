@@ -54,7 +54,7 @@ export default function GalleryView({ onBack, onPrint }) {
       const url = URL.createObjectURL(res.data);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `karikatur-${id}.jpg`;
+      a.download = `plena-snap-${id}.jpg`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -72,7 +72,7 @@ export default function GalleryView({ onBack, onPrint }) {
         >
           <ArrowLeft size={20} weight="bold" color="#fff" />
         </button>
-        <h2 className="font-display font-bold tracking-tighter text-lg md:text-lg">Son Karikatürler</h2>
+        <h2 className="font-display font-bold tracking-tighter text-lg md:text-lg">SNAP Galerisi</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto">

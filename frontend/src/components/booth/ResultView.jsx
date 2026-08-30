@@ -7,14 +7,14 @@ export default function ResultView({ result, onPrint, onNew, onHome, onGallery }
   const download = () => {
     const a = document.createElement("a");
     a.href = dataUrl;
-    a.download = `karikatur-${result.id}.jpg`;
+    a.download = `plena-snap-${result.id}.jpg`;
     a.click();
   };
 
   return (
     <div className="h-full w-full flex flex-col px-5 pt-5 pb-6 overflow-y-auto" data-testid="result-view">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xs tracking-[0.25em] uppercase text-[#00E5FF]">Karikatürün Hazır!</span>
+        <span className="text-xs tracking-[0.25em] uppercase text-[#00E5FF]">{"SNAP'in Hazır!"}</span>
         <button
           data-testid="result-home-btn"
           onClick={onHome}
