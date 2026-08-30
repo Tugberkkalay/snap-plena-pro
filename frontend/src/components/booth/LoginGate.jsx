@@ -264,6 +264,8 @@ export default function LoginGate({ onUnlock }) {
               irisColorSecondary="#2E6BF0"
               blinkInterval={4200}
               externalTarget={handTargetRef}
+              squint={stage === "verifying" ? 1 : progress}
+              glow={stage === "verifying"}
             />
             <div className="mt-8 flex items-center gap-2 text-[#A1A1AA] text-sm">
               <HandPalm size={22} weight="duotone" color="#00E5FF" />

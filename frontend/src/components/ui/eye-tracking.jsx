@@ -19,6 +19,8 @@ function Eye({
   mouseX,
   mouseY,
   index,
+  squint,
+  glow,
 }) {
   const eyeRef = React.useRef(null);
   const [isBlinking, setIsBlinking] = React.useState(false);
@@ -115,8 +117,8 @@ function Eye({
                 ? "inset 0 4px 12px rgba(0,0,0,0.1), 0 6px 24px rgba(0,0,0,0.15)"
                 : "0 2px 10px rgba(0,0,0,0.1)",
       }}
-      animate={{ scaleY: isBlinking ? 0.05 : 1 }}
-      transition={{ scaleY: { duration: 0.1, ease: "easeInOut" } }}
+      animate={{ scaleY: isBlinking ? 0.05 : 1 - (squint || 0) * 0.45 }}
+      transition={{ scaleY: { duration: 0.18, ease: "easeInOut" } }}
     >
       {variant === "realistic" && (
         <div className="absolute inset-0 overflow-hidden rounded-full opacity-[0.07]">
@@ -150,12 +152,22 @@ function Eye({
             variant === "cyber"
               ? `conic-gradient(from 0deg, ${irisColor}, ${irisColorSecondary}, ${irisColor})`
               : `radial-gradient(circle at 40% 40%, ${irisColorSecondary}, ${irisColor} 60%, ${irisColor}dd 100%)`,
-          boxShadow:
-            variant === "realistic"
+        }}
+        animate={{
+          boxShadow: glow
+            ? `0 0 36px ${irisColor}, inset 0 0 16px ${irisColor}aa`
+            : variant === "realistic"
               ? `inset 0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1)`
               : variant === "cyber"
                 ? `0 0 15px ${irisColor}66, inset 0 0 10px ${irisColor}33`
                 : `inset 0 1px 4px rgba(0,0,0,0.2)`,
+          scale: glow ? [1, 1.14, 1] : 1,
+        }}
+        transition={{
+          boxShadow: { duration: 0.35 },
+          scale: glow
+            ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 0.3 },
         }}
       >
         {showIrisDetail && (
@@ -313,6 +325,8 @@ export function EyeTracking({
   reactivePupil = true,
   showEyelids = true,
   externalTarget = null,
+  squint = 0,
+  glow = false,
 }) {
   const mouseX = React.useRef(typeof window !== "undefined" ? window.innerWidth / 2 : 0);
   const mouseY = React.useRef(typeof window !== "undefined" ? window.innerHeight / 2 : 0);
@@ -433,6 +447,8 @@ export function EyeTracking({
           showEyelids={showEyelids}
           mouseX={mouseX}
           mouseY={mouseY}
+          squint={squint}
+          glow={glow}
         />
       ))}
     </div>
