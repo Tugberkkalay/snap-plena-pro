@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
-import { GearSix, Images } from "@phosphor-icons/react";
+import { GearSix, Images, SignOut } from "@phosphor-icons/react";
 import SnapMark from "@/components/booth/SnapMark";
 
-export default function AttractScreen({ onStart, onGallery, onSettings }) {
+export default function AttractScreen({ onStart, onGallery, onSettings, onLogout }) {
   return (
     <div className="relative h-full w-full flex flex-col" data-testid="attract-screen">
       <div className="absolute inset-0 opacity-30 pointer-events-none"
@@ -33,6 +33,13 @@ export default function AttractScreen({ onStart, onGallery, onSettings }) {
           >
             <GearSix size={20} weight="duotone" color="#fff" />
           </button>
+          <button
+            data-testid="logout-btn"
+            onClick={onLogout}
+            className="h-11 w-11 rounded-full glass-dock flex items-center justify-center active:scale-95 transition-transform"
+          >
+            <SignOut size={20} weight="duotone" color="#FF3B30" />
+          </button>
         </div>
       </header>
 
@@ -49,14 +56,36 @@ export default function AttractScreen({ onStart, onGallery, onSettings }) {
           Plena Studio presents
         </motion.p>
         <motion.h1
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
           className="font-display font-black tracking-tighter leading-none text-4xl sm:text-5xl lg:text-6xl attract-glow flex items-center gap-3 sm:gap-4"
         >
-          SNAP
-          <SnapMark size={52} className="snap-mark-hero" />
+          <span className="flex">
+            {"SNAP".split("").map((ch, i) => (
+              <motion.span
+                key={i}
+                initial={{ opacity: 0, scale: 0, rotate: -15, y: 20 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
+                transition={{ delay: 0.25 + i * 0.13, type: "spring", stiffness: 380, damping: 13 }}
+                className="inline-block"
+              >
+                {ch}
+              </motion.span>
+            ))}
+          </span>
+          <motion.span
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.85, type: "spring", stiffness: 300, damping: 12 }}
+            className="inline-flex"
+          >
+            <SnapMark size={52} className="snap-mark-hero" />
+          </motion.span>
         </motion.h1>
+        <motion.div
+          className="pointer-events-none fixed inset-0 z-30 bg-white"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0, 0.55, 0] }}
+          transition={{ duration: 1.5, times: [0, 0.7, 0.78, 1] }}
+        />
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

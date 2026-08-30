@@ -1,0 +1,23 @@
+{
+  "summary": "Iteration 6 focused on the new cinematic login gate. Backend: created /app/backend/tests/test_login_gate.py (8 tests, all passed) covering verify-gesture validation (invalid base64 -> 400, non-image base64 -> 400, missing field -> 422), 2 real Gemini VLM calls (l_sign_test.jpg -> ok:true, plena_logo.png -> ok:false) and verify-pin (no header -> 401, wrong PIN -> 401, correct 574913 -> {ok:true}). Frontend (mobile 390x844, headless fake camera): fresh load shows login-gate with login-btn + pin-fallback-btn and ZERO app views rendered (attract-screen count 0, gate re-enforced after re-navigation while locked); LOGIN -> login-scanning with cyber eye, Turkish 'L' hint and gesture-progress (MediaPipe graph started successfully on CPU/XNNPACK, progress stays 0% as expected with fake camera); PIN fallback: submit disabled while empty, wrong PIN 111111 -> Turkish toast 'Geçersiz PIN' + field cleared + still locked, correct PIN -> login-success stage -> attract-screen, sessionStorage snap_unlocked=1; reload in same context goes straight to attract-screen (no gate); brand-new context shows the gate again (snap_unlocked=null). Regression after unlock: gallery loaded 24 items, slideshow opened (1/24) and exited back to gallery, camera view opens via tap-to-start with photo-file-input + shutter present, back navigation works. No caricature generation triggered; exactly 2 VLM calls used (budget 3).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_login_gate.py",
+    "/app/test_reports/pytest/login_gate_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "LoginGate.loop() lists `succeed` in deps but never calls it directly (calls verifyRef.current()); harmless but stale-dep noise — consider cleaning.",
+    "verifyFrame() does not guard against video.videoWidth === 0; if the stream drops right at 100% progress, canvas would be 0x0 and the POST would send an invalid image (backend correctly answers 400 and the UI toasts, so non-blocking).",
+    "Gate is client-side only (sessionStorage): all /api endpoints except admin-PIN-protected ones remain publicly callable. Acceptable for a booth, but note it is UX gating, not security."
+  ],
+  "updated_files": ["/app/backend/tests/test_login_gate.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "None. Existing 24 gallery creations and event logo untouched (only free GETs).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": false,
+  "test_credentials": "ADMIN_PIN 574913 from /app/memory/test_credentials.md (verified working for /api/auth/verify-pin and PIN fallback UI)",
+  "context_for_next_testing_agent": "Login gate fully verified (backend + frontend + session persistence + locked isolation + post-unlock regression). Real 'L' hand gesture unlock cannot be validated headlessly (fake camera never produces landmarks matching isLSign) - user must test on a real device. VLM budget: 2/3 calls used this iteration. Reuse /app/backend/tests/test_login_gate.py but skip the VLM class if Gemini credits are tight (pytest -k 'not VLM').",
+  "rca_of_the_issue": "N/A - no defects found."
+}

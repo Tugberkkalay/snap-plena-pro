@@ -8,7 +8,9 @@ import ConfirmView from "@/components/booth/ConfirmView";
 import ProcessingView from "@/components/booth/ProcessingView";
 import ResultView from "@/components/booth/ResultView";
 import GalleryView from "@/components/booth/GalleryView";
+import SlideshowView from "@/components/booth/SlideshowView";
 import SettingsSheet from "@/components/booth/SettingsSheet";
+import LoginGate from "@/components/booth/LoginGate";
 
 function App() {
   const [view, setView] = useState("attract");
@@ -17,6 +19,20 @@ function App() {
   const [eventLogoExists, setEventLogoExists] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [printSrc, setPrintSrc] = useState(null);
+  const [unlocked, setUnlocked] = useState(
+    () => sessionStorage.getItem("snap_unlocked") === "1"
+  );
+
+  const handleUnlock = () => {
+    sessionStorage.setItem("snap_unlocked", "1");
+    setUnlocked(true);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("snap_unlocked");
+    setUnlocked(false);
+    setView("attract");
+  };
 
   const refreshLogo = useCallback(async () => {
     try {
@@ -75,11 +91,16 @@ function App() {
     <>
       <div className="app-shell h-[100dvh] w-full overflow-hidden bg-[#0A0A0A] text-white">
         <Toaster position="top-center" richColors />
+        {!unlocked ? (
+          <LoginGate onUnlock={handleUnlock} />
+        ) : (
+          <>
         {view === "attract" && (
           <AttractScreen
             onStart={() => setView("capture")}
             onGallery={() => setView("gallery")}
             onSettings={() => setSettingsOpen(true)}
+            onLogout={handleLogout}
           />
         )}
         {view === "capture" && (
@@ -108,14 +129,21 @@ function App() {
           />
         )}
         {view === "gallery" && (
-          <GalleryView onBack={() => setView("attract")} onPrint={handlePrint} />
+          <GalleryView
+            onBack={() => setView("attract")}
+            onPrint={handlePrint}
+            onSlideshow={() => setView("slideshow")}
+          />
         )}
+        {view === "slideshow" && <SlideshowView onExit={() => setView("gallery")} />}
         <SettingsSheet
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           eventLogoExists={eventLogoExists}
           refreshLogo={refreshLogo}
         />
+          </>
+        )}
       </div>
       <div className="print-area" data-testid="print-area">
         {printSrc && <img src={printSrc} alt="Baskı" />}

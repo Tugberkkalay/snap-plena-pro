@@ -61,6 +61,23 @@ Etkinlik/yazılım lansmanı için fotoğraf çekip, o fotoğrafı şirket logol
 - ✅ Baskı çıktısı değişmedi (kullanıcı tercihi: sadece Plena logosu)
 - Renk kimliği: koyu + cyan korundu (kullanıcı tercihi)
 - İleride: snap.plena.pro özel domain deploy sırasında bağlanabilir
+
+## QR + Slayt + Sinematik (6. iterasyon)
+- ✅ QR paylaşım: Sonuç ekranında QR (qrcode.react) → /api/share/{id} markalı HTML sayfası + ?dl=1 ile Content-Disposition indirme; OG meta etiketleri; HEAD desteği
+- ✅ Slayt gösterisi: Galeriden "Slayt" → tam ekran, 6 sn döngü + Ken Burns, 60 sn'de bir yeni SNAP'leri çeker, marka imzası + sayaç
+- ✅ Açılış sinematiği: SNAP harfleri spring ile tek tek patlar + SnapMark pop + deklanşör flaşı
+- ✅ Test: iteration_5.json — backend 7/7, frontend %100 (1 Gemini üretimi)
+
+## Sinematik Login Kapısı (7. iterasyon)
+- ✅ Siyah ekran + PLENA SNAP + LOGIN; tıklanınca ÇİFT cyber göz (eye-tracking.jsx, kullanıcının verdiği komponent JSX'e çevrildi)
+- ✅ Kamera gizli açılır; gözler MOUSE'u DEĞİL kameradaki ELİ takip eder (externalTarget ref, el yokken idle animasyon)
+- ✅ "L" işareti (başparmak+işaret): MediaPipe tasks-vision@1.0.1 landmark geometrisi (isLSign) ~900ms progress → tek kare Gemini VLM teyidi (POST /api/auth/verify-gesture, gemini-3-flash-preview, YES/NO)
+- ✅ PIN fallback: "Ekip girişi (PIN)" → POST /api/auth/verify-pin (X-Admin-Pin)
+- ✅ Kilit: sessionStorage snap_unlocked; Attract header'da ÇIKIŞ butonu (logout-btn) → kapıya döner
+- ✅ Login başarısında ve fotoğraf çekiminde deklanşör: beyaz flaş + WebAudio sentez deklanşör sesi (lib/shutter.js)
+- ✅ Test: iteration_6.json — backend 8/8 (VLM: L fotoğrafı YES, logo NO), frontend %100 (oturum kalıcılığı, kilit izolasyonu, regresyon)
+- Test görselleri: /app/assets/l_sign_test.jpg, /app/assets/plena_logo.png
+- Not: Gerçek L-jesti headless test edilemez — kullanıcı gerçek cihazda deneyecek
 - Bilinen sınırlamalar: rate limit bellek içi (restart'ta sıfırlanır, tek pod için yeterli); CORS_ORIGINS env'de "*" (preview edge proxy zaten override ediyor, deploy'da domain'e sabitlenebilir)
 
 ## Backlog / Sonraki Adımlar

@@ -14,7 +14,7 @@ from typing import List, Literal, Optional
 import requests
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI, File, Header, HTTPException, Request, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import HTMLResponse, Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from PIL import Image, ImageDraw
 from pydantic import BaseModel
@@ -190,6 +190,18 @@ class CaricatureRequest(BaseModel):
     logo_placement: Literal["corner", "flag", "banner", "tshirt"] = "corner"
 
 
+class GestureVerifyRequest(BaseModel):
+    image_base64: str
+
+
+GESTURE_VERIFY_PROMPT = (
+    "Look at this photo. Is a person making an 'L' hand sign with one hand: index finger extended "
+    "upward and thumb extended sideways (roughly 90 degrees between them), while the middle, ring "
+    "and pinky fingers are folded down? The hand may be mirrored or slightly rotated. "
+    "Reply with exactly one word: YES or NO."
+)
+
+
 class CreationOut(BaseModel):
     id: str
     created_at: str
@@ -256,17 +268,52 @@ async def list_creations():
     return [CreationOut(id=d["id"], created_at=d["created_at"]) for d in docs]
 
 
-@api_router.get("/images/{creation_id}")
-async def get_creation_image(creation_id: str):
+@api_router.api_route("/images/{creation_id}", methods=["GET", "HEAD"])
+async def get_creation_image(creation_id: str, dl: int = 0):
     doc = await db.creations.find_one({"id": creation_id, "is_deleted": False})
     if not doc:
         raise HTTPException(status_code=404, detail="Görsel bulunamadı")
     data, content_type = await asyncio.to_thread(get_object, doc["storage_path"])
-    return Response(
-        content=data,
-        media_type="image/jpeg",
-        headers={"Cache-Control": "public, max-age=86400, immutable"},
-    )
+    headers = {"Cache-Control": "public, max-age=86400, immutable"}
+    if dl:
+        headers["Content-Disposition"] = f'attachment; filename="plena-snap-{creation_id}.jpg"'
+    return Response(content=data, media_type="image/jpeg", headers=headers)
+
+
+SHARE_PAGE = """<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>PLENA SNAP · HR VISION '26</title>
+<meta property="og:title" content="PLENA SNAP · HR VISION '26"/>
+<meta property="og:description" content="SNAP'ini görüntüle ve indir — PLENA STUDIO presents SNAP"/>
+<meta property="og:image" content="{base}/api/images/{cid}"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<style>
+body{{margin:0;background:#0A0A0A;color:#fff;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:28px 20px;min-height:100vh;box-sizing:border-box}}
+.brand{{display:flex;align-items:center;gap:8px;font-weight:700;font-size:18px;letter-spacing:-0.5px;margin-bottom:4px}}
+.brand .cy{{color:#00E5FF}}
+.sub{{color:#00E5FF;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:22px}}
+img.snap{{max-width:100%;max-height:68vh;border-radius:16px;border:1px solid rgba(255,255,255,.12)}}
+a.dl{{display:block;margin-top:22px;background:#00E5FF;color:#000;font-weight:600;padding:15px 40px;border-radius:999px;text-decoration:none;font-size:15px}}
+.foot{{color:rgba(255,255,255,.35);font-size:11px;margin-top:18px;letter-spacing:1px}}
+</style></head><body>
+<div class="brand"><svg width="20" height="20" viewBox="0 0 48 48"><rect x="21" y="3" width="6" height="15" rx="3" fill="#2E6BF0" transform="rotate(45 24 24)"/><rect x="21" y="3" width="6" height="15" rx="3" fill="#F2B21B" transform="rotate(135 24 24)"/><rect x="21" y="3" width="6" height="15" rx="3" fill="#3BA55D" transform="rotate(225 24 24)"/><rect x="21" y="3" width="6" height="15" rx="3" fill="#E5443C" transform="rotate(315 24 24)"/></svg>PLENA&nbsp;<span class="cy">SNAP</span></div>
+<div class="sub">HR Vision '26 Experience</div>
+<img class="snap" src="/api/images/{cid}" alt="SNAP"/>
+<a class="dl" href="/api/images/{cid}?dl=1">JPG Olarak İndir</a>
+<div class="foot">PLENA STUDIO presents SNAP</div>
+</body></html>"""
+
+
+@api_router.get("/share/{creation_id}")
+async def share_page(request: Request, creation_id: str):
+    doc = await db.creations.find_one({"id": creation_id, "is_deleted": False})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Görsel bulunamadı")
+    base = str(request.base_url).rstrip("/")
+    if base.startswith("http://") and "localhost" not in base:
+        base = "https://" + base[len("http://"):]
+    return HTMLResponse(content=SHARE_PAGE.format(cid=creation_id, base=base))
 
 
 @api_router.delete("/creations/{creation_id}")
@@ -276,6 +323,38 @@ async def delete_creation(request: Request, creation_id: str, x_admin_pin: Optio
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Görsel bulunamadı")
     return {"ok": True}
+
+
+@api_router.post("/auth/verify-pin")
+async def auth_verify_pin(request: Request, x_admin_pin: Optional[str] = Header(None)):
+    verify_admin_pin(request, x_admin_pin)
+    return {"ok": True}
+
+
+@api_router.post("/auth/verify-gesture")
+async def auth_verify_gesture(request: Request, req: GestureVerifyRequest):
+    check_rate_limit(request, "gesture", 12)
+    try:
+        raw = base64.b64decode(req.image_base64)
+        if len(raw) > 8 * 1024 * 1024:
+            raise ValueError("too large")
+        Image.open(io.BytesIO(raw)).verify()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Geçersiz görsel verisi")
+    chat = LlmChat(
+        api_key=EMERGENT_KEY,
+        session_id=str(uuid.uuid4()),
+        system_message="You are a strict hand-gesture verifier. Answer only YES or NO.",
+    )
+    chat.with_model("gemini", "gemini-3-flash-preview")
+    msg = UserMessage(text=GESTURE_VERIFY_PROMPT, file_contents=[ImageContent(req.image_base64)])
+    try:
+        resp = await chat.send_message(msg)
+    except Exception as e:
+        logger.error(f"Gesture verify failed: {e}")
+        raise HTTPException(status_code=502, detail="Doğrulama servisi yanıt vermedi, tekrar deneyin")
+    ok = "YES" in str(resp).strip().upper()
+    return {"ok": ok}
 
 
 @api_router.post("/settings/logo")

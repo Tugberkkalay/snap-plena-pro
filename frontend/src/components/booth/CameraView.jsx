@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Camera, CameraRotate, UploadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { playShutter } from "@/lib/shutter";
 
 export default function CameraView({ onCapture, onBack }) {
   const videoRef = useRef(null);
@@ -44,6 +45,7 @@ export default function CameraView({ onCapture, onBack }) {
   const capture = () => {
     const video = videoRef.current;
     if (!video || !cameraReady) return;
+    playShutter();
     setFlash(true);
     setTimeout(() => setFlash(false), 320);
     const canvas = document.createElement("canvas");

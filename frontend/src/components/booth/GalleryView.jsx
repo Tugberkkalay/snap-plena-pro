@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, DownloadSimple, LockKey, Printer, Trash, X } from "@phosphor-icons/react";
+import { ArrowLeft, DownloadSimple, LockKey, Play, Printer, Trash, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { API, api } from "@/lib/api";
 
-export default function GalleryView({ onBack, onPrint }) {
+export default function GalleryView({ onBack, onPrint, onSlideshow }) {
   const [creations, setCreations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -73,6 +73,14 @@ export default function GalleryView({ onBack, onPrint }) {
           <ArrowLeft size={20} weight="bold" color="#fff" />
         </button>
         <h2 className="font-display font-bold tracking-tighter text-lg md:text-lg">SNAP Galerisi</h2>
+        <button
+          data-testid="slideshow-btn"
+          onClick={onSlideshow}
+          className="ml-auto h-11 px-5 rounded-full glass-dock flex items-center gap-2 text-sm font-medium active:scale-95 transition-transform"
+        >
+          <Play size={16} weight="fill" color="#00E5FF" />
+          Slayt
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">

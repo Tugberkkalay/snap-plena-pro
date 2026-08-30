@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { Camera, DownloadSimple, House, Images, Printer } from "@phosphor-icons/react";
+import { QRCodeSVG } from "qrcode.react";
+import { API } from "@/lib/api";
 
 export default function ResultView({ result, onPrint, onNew, onHome, onGallery }) {
   const dataUrl = `data:image/jpeg;base64,${result.image_base64}`;
@@ -40,6 +42,15 @@ export default function ResultView({ result, onPrint, onNew, onHome, onGallery }
       </div>
 
       <p className="text-center text-xs text-white/40 mt-3">10x15 cm (4x6") · 300 DPI · Baskıya hazır</p>
+
+      <div className="flex items-center justify-center gap-4 mt-4" data-testid="qr-share">
+        <div className="bg-white p-2 rounded-xl shrink-0">
+          <QRCodeSVG value={`${API}/share/${result.id}`} size={84} />
+        </div>
+        <p className="text-xs text-[#A1A1AA] max-w-[150px] leading-relaxed">
+          Telefonuna indirmek için kamerayla QR kodu okut
+        </p>
+      </div>
 
       <div className="grid grid-cols-2 gap-3 mt-4 w-full max-w-xl mx-auto">
         <button
