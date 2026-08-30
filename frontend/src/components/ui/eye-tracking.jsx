@@ -117,8 +117,8 @@ function Eye({
                 ? "inset 0 4px 12px rgba(0,0,0,0.1), 0 6px 24px rgba(0,0,0,0.15)"
                 : "0 2px 10px rgba(0,0,0,0.1)",
       }}
-      animate={{ scaleY: isBlinking ? 0.05 : 1 - (squint || 0) * 0.45 }}
-      transition={{ scaleY: { duration: 0.18, ease: "easeInOut" } }}
+      animate={{ scaleY: isBlinking ? 0.05 : 1 }}
+      transition={{ scaleY: { duration: 0.1, ease: "easeInOut" } }}
     >
       {variant === "realistic" && (
         <div className="absolute inset-0 overflow-hidden rounded-full opacity-[0.07]">
@@ -293,6 +293,33 @@ function Eye({
           />
         </>
       )}
+      <motion.div
+        className="pointer-events-none absolute inset-x-0 top-0"
+        style={{
+          height: eyeHeight,
+          zIndex: 5,
+          background: variant === "cyber" ? "#080816" : "rgba(10,10,10,0.9)",
+          borderRadius: "0 0 50% 50%",
+          borderBottom: variant === "cyber" ? `1px solid ${irisColor}55` : "none",
+          boxShadow: variant === "cyber" ? `0 2px 12px rgba(0,0,0,0.6)` : "none",
+        }}
+        initial={false}
+        animate={{ y: -(eyeHeight + 3) + (squint || 0) * (eyeHeight + 3) * 0.62 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      />
+      <motion.div
+        className="pointer-events-none absolute inset-x-0 bottom-0"
+        style={{
+          height: eyeHeight,
+          zIndex: 5,
+          background: variant === "cyber" ? "#080816" : "rgba(10,10,10,0.9)",
+          borderRadius: "50% 50% 0 0",
+          borderTop: variant === "cyber" ? `1px solid ${irisColor}33` : "none",
+        }}
+        initial={false}
+        animate={{ y: eyeHeight + 3 - (squint || 0) * (eyeHeight + 3) * 0.3 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      />
       {variant === "cyber" && (
         <motion.div
           className="pointer-events-none absolute inset-x-0 h-[2px]"
