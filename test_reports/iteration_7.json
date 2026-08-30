@@ -1,0 +1,29 @@
+{
+  "summary": "Bug-fix verification for slow 'L' gesture detection (PLENA SNAP login gate). (1) Wrote a node unit test that EXTRACTS the real dist/isLSign source from LoginGate.jsx (no copy-paste) and runs 7 synthetic 21-landmark fixtures: clean L, tilted-18deg lazy L with moderately extended thumb (the reported bug case), fist, open palm, index-only-with-folded-thumb, empty input. All 7 behave as expected. (2) Built a 'legacy threshold' variant of the same function (0.8*scale thumbExt, cos<0.7, 1.15 folds, lm[6].y index check) and proved the lazy/tilted L is REJECTED by the old geometry but ACCEPTED by the new one -> the relaxation demonstrably fixes the latency complaint (diag: thumb ratio 0.618 vs old >0.8 needed; index/thumb angle 40deg, cos 0.766 vs old cos<0.7 needed). (3) Verified constants in source: HOLD_MS===550, decay dt*0.5, all three GestureRecognizer confidences 0.3, three 1.25 fold multipliers, cos<0.85, thumbExt 0.55*scale. (4) Frontend smoke on public URL: gate loads, LOGIN -> scanning stage with eyes + progress bar (0%) and Turkish hint renders, MediaPipe GestureRecognizer initialized with the new options with NO invalid-option warnings (only benign 'Created TensorFlow Lite XNNPACK delegate for CPU' info log), PIN 574913 unlocks to attract screen. (5) Backend regression: 4/4 passed in test_login_gate.py subset - verify-gesture with /app/assets/l_sign_test.jpg -> ok:true (exactly 1 Gemini VLM call, budget respected), verify-pin 574913 -> 200 {ok:true}, no-header/wrong-pin -> 401. Zero caricature generations.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Login gate / scanning stage", "issues": ["In the scanning screenshot the left eye renders fully but the right eye appears as a thin horizontal line - most likely a mid-blink frame of EyeTracking (blinkInterval 4200ms) captured by the screenshot, but if blinks are not synchronised across eyes it looks like a rendering glitch. Low priority, visual only."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/tests/isLSign.test.js",
+    "/app/backend/tests/test_login_gate.py",
+    "/app/test_reports/pytest/iteration7_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "isLSign relaxation is safe against the tested negative fixtures (fist / open palm / index-only), so no false-positive regression was observed; however the angle gate is now cos<0.85 (~32deg) and a very narrow 'index up + thumb slightly splayed' pose could pass - if false unlocks appear in the field, tighten to ~0.8 rather than reverting the thumbExt change (thumbExt was the dominant blocker in the bug case).",
+    "verifyFrame() resets heldRef to 0 on VLM rejection; after the HOLD_MS reduction to 550ms this makes a rejected attempt feel like a full restart. Consider resetting to ~50% so a genuine L re-confirms faster (optional UX polish).",
+    "loop() useCallback dependency list is [succeed] but loop does not use succeed; harmless but misleading - deps should be empty or include verifyRef only."
+  ],
+  "updated_files": ["/app/tests/isLSign.test.js (new test file only; no application code changed)"],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "100% (smoke + 16/16 geometry & constant assertions)"},
+  "seed_data_creation": "None. No creations deleted, event logo untouched.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Gesture geometry is now covered by a pure-JS unit test at /app/tests/isLSign.test.js - run 'node /app/tests/isLSign.test.js' (exit 0 = pass). It re-extracts isLSign from LoginGate.jsx, so any future threshold change will be re-validated automatically; update the fixtures if landmark indexing logic changes. Real L gesture still cannot be performed headless. Gemini VLM budget: 1 call used this iteration (verify-gesture on /app/assets/l_sign_test.jpg -> ok:true); avoid rerunning TestVerifyGestureVLM::test_no_hand_image_rejected unless needed. verify-pin shares a 10/min admin rate bucket - pace calls.",
+  "rca_of_the_issue": "Original slow detection was caused by two over-strict gates in isLSign: thumbExt required the thumb tip to be >0.8*palm-scale from the index MCP and the index/thumb angle required cos<0.7 (>45deg). A natural, slightly tilted L with a moderately splayed thumb measures ~0.62*scale and ~40deg (cos 0.766) and therefore failed both gates, so progress only accumulated in rare frames while the old dt*1.5 decay erased it between them. Relaxing to 0.55*scale / cos<0.85, halving decay to dt*0.5, lowering HOLD_MS to 550ms and dropping MediaPipe confidences to 0.3 makes that pose pass continuously. Verified by differential unit test (old=false, new=true on the identical fixture)."
+}

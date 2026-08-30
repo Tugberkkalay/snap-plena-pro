@@ -12,24 +12,24 @@ import { playShutter, unlockAudio } from "@/lib/shutter";
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task";
-const HOLD_MS = 900;
+const HOLD_MS = 550;
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 function isLSign(lm) {
   if (!lm || lm.length < 21) return false;
   const scale = dist(lm[0], lm[9]) || 1e-6;
-  const indexExt = dist(lm[8], lm[0]) > dist(lm[6], lm[0]) && lm[8].y < lm[6].y;
-  const middleFold = dist(lm[12], lm[0]) < dist(lm[10], lm[0]) * 1.15;
-  const ringFold = dist(lm[16], lm[0]) < dist(lm[14], lm[0]) * 1.15;
-  const pinkyFold = dist(lm[20], lm[0]) < dist(lm[18], lm[0]) * 1.15;
-  const thumbExt = dist(lm[4], lm[5]) > scale * 0.8;
+  const indexExt = dist(lm[8], lm[0]) > dist(lm[6], lm[0]) && lm[8].y < lm[5].y;
+  const middleFold = dist(lm[12], lm[0]) < dist(lm[10], lm[0]) * 1.25;
+  const ringFold = dist(lm[16], lm[0]) < dist(lm[14], lm[0]) * 1.25;
+  const pinkyFold = dist(lm[20], lm[0]) < dist(lm[18], lm[0]) * 1.25;
+  const thumbExt = dist(lm[4], lm[5]) > scale * 0.55;
   const ix = lm[8].x - lm[5].x;
   const iy = lm[8].y - lm[5].y;
   const tx = lm[4].x - lm[2].x;
   const ty = lm[4].y - lm[2].y;
   const cos = (ix * tx + iy * ty) / (Math.hypot(ix, iy) * Math.hypot(tx, ty) || 1e-6);
-  const angleOk = cos < 0.7;
+  const angleOk = cos < 0.85;
   return indexExt && middleFold && ringFold && pinkyFold && thumbExt && angleOk;
 }
 
@@ -97,7 +97,7 @@ export default function LoginGate({ onUnlock }) {
         if (isLSign(g)) {
           heldRef.current = Math.min(HOLD_MS, heldRef.current + dt);
         } else {
-          heldRef.current = Math.max(0, heldRef.current - dt * 1.5);
+          heldRef.current = Math.max(0, heldRef.current - dt * 0.5);
         }
         const p = heldRef.current / HOLD_MS;
         setProgress(p);
@@ -132,8 +132,8 @@ export default function LoginGate({ onUnlock }) {
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Doğrulama başarısız, tekrar dene");
     }
-    heldRef.current = 0;
-    setProgress(0);
+    heldRef.current = HOLD_MS * 0.5;
+    setProgress(0.5);
     setStage("scanning");
     lastTsRef.current = 0;
     rafRef.current = requestAnimationFrame(loop);
@@ -159,6 +159,9 @@ export default function LoginGate({ onUnlock }) {
         baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
         runningMode: "VIDEO",
         numHands: 1,
+        minHandDetectionConfidence: 0.3,
+        minHandPresenceConfidence: 0.3,
+        minTrackingConfidence: 0.3,
       };
       try {
         recognizerRef.current = await GestureRecognizer.createFromOptions(vision, options);
