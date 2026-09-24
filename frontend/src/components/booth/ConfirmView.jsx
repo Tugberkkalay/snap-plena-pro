@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { ArrowCounterClockwise, Flag, FilmStrip, MagicWand, Monitor, Square, Stamp, TShirt, UploadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { API } from "@/lib/api";
 
 const PLACEMENTS = [
   { key: "corner", label: "Köşe Damgası", icon: Stamp },
@@ -48,12 +49,35 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
       </div>
 
       <div className="flex-1 min-h-0 flex items-center justify-center">
-        <img
-          src={photo}
-          alt="Çekilen fotoğraf"
-          data-testid="captured-photo"
-          className="max-h-full max-w-full rounded-2xl object-contain border border-white/10"
-        />
+        {frame ? (
+          <div
+            data-testid="frame-preview"
+            className="h-full max-w-full aspect-[3/4] bg-white flex flex-col rounded-md shadow-[0_0_40px_rgba(255,255,255,0.12)] p-[2.5%]"
+          >
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <img src={photo} alt="Çekilen fotoğraf" data-testid="captured-photo" className="h-full w-full object-cover" />
+            </div>
+            <div className="h-[9.4%] shrink-0 flex items-center justify-between gap-2 pt-[2%]">
+              {logoMode === "custom" && customLogoB64 ? (
+                <img src={customLogoB64} alt="Logo" className="h-3/5 max-w-[38%] object-contain" />
+              ) : logoMode === "event" && eventLogoExists ? (
+                <img src={`${API}/logo-image`} alt="Logo" className="h-3/5 max-w-[38%] object-contain" />
+              ) : (
+                <span />
+              )}
+              <span className="text-[8px] sm:text-[10px] font-bold text-neutral-700 tracking-wide whitespace-nowrap">
+                {"PLENA SNAP · HR VISION '26"}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <img
+            src={photo}
+            alt="Çekilen fotoğraf"
+            data-testid="captured-photo"
+            className="max-h-full max-w-full rounded-2xl object-contain border border-white/10"
+          />
+        )}
       </div>
 
       <div className="mt-5">
