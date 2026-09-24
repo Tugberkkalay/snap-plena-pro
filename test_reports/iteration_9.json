@@ -1,0 +1,23 @@
+{
+  "summary": "Iteration 9 - Verified two new features: (1) gallery name search + (2) optional 'Instax Çerçevesi' print frame. Backend: 5/5 pytest passing in /app/backend/tests/test_frame.py: (a) newest creation on /api/creations is 'Çerçeve Testi' (framed), (b) its /api/images/{id} decodes to exactly 1200x1600 JPEG with pixel(5,5)=(255,255,255) pure white border, pixel(600,1590) near-white bottom strip (all channels >= 240), pixel(600,800) NOT white (photo area preserved), (c) older 'Test Misafir' (2eeec593-...) 1200x1600 with non-white pixel(5,5) proving frame is optional, (d) POST /api/caricature with invalid base64 + frame:true returns 400/422 (no 500 crash in new compose path), (e) frame:false path also validates properly. Frontend (0 Gemini calls this run): PIN 574913 -> gallery -> gallery-search-input visible over 20 tiles; typing 'Çerçeve' -> 1 tile (83d24452 = Çerçeve Testi) with ZERO /api/creations refetches during typing (verified via request log => instant client-side filter); typing 'Test' -> 3 tiles (Çerçeve Testi + Test Misafir + Instax Test Ali, spec asked >=2); 'zzzqqq' -> gallery-no-match visible with Turkish message '\"zzzqqq\" ile eşleşen SNAP yok'; gallery-search-clear button visible+clicked -> restored to 20 tiles. Turkish case-insensitivity confirmed: 'çerçeve' (lower) AND 'ÇERÇEVE' (upper) both match 'Çerçeve Testi' (1 tile each). Detail modal from searched result opens with gallery-detail-name='Çerçeve Testi'. slideshow-btn opens slideshow-view (with slideshow-counter, slideshow-exit testids) and exits cleanly (only a benign 'requestFullscreen requires user gesture' console warning, non-blocking). ConfirmView: after unlock -> tap-to-start -> photo-file-input synthetic upload -> 'Baskı stili' section present; frame-off pill selected by default (bg-[#00E5FF] cyan class), frame-on unselected; clicking frame-on flips selection AND reveals hint containing 'film şeridi' (İnce beyaz kenarlık + altta Plena logolu film şeridi eklenir.); clicking frame-off toggles back and hides hint. No generate-btn clicked (Gemini budget preserved).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_frame.py",
+    "/app/test_reports/pytest/iteration9_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py compose_print_image(frame=True): the 30px border + 150px bottom strip magic numbers are hardcoded; consider naming constants (BORDER_PX, STRIP_H) for future tunability and to keep frontend/backend in sync if a mm-based ratio becomes desired.",
+    "ConfirmView.jsx L156 shows the 'film şeridi' hint but there is no visual preview of the strip contents at confirm-time; a small mock/thumbnail of the framed output could reduce user surprise on first render.",
+    "GalleryView.jsx search uses toLocaleLowerCase('tr') on both query and name - correct for Turkish I/İ mapping, but consider also normalising diacritics (unicode NFKD) so 'cerceve' (ascii) would still match 'Çerçeve Testi' for users on keyboards without Turkish diacritic input.",
+    "Instax frame strip renders text 'PLENA SNAP · HR VISION '26' using Liberation Sans Bold fallback list - if the container ever ships without Liberation fonts, PIL will silently fall back to default bitmap font at ~10px which would look broken; add a startup check that logs a WARNING when the target font file is not found."
+  ],
+  "updated_files": ["/app/backend/tests/test_frame.py (new)"],
+  "success_rate": {"backend": "100% (5/5)", "frontend": "100% on all required checks (search + case-insensitivity + no-match + clear + detail modal + slideshow + frame pills)"},
+  "test_credentials": "ADMIN_PIN=574913 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "No new creations. Existing named creations verified: 83d24452-... 'Çerçeve Testi' (framed, newest), 2eeec593-... 'Test Misafir' (unframed), b1bd9672-... 'Instax Test Ali' (unframed).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Frame + search features fully verified. Reusable regression files: /app/backend/tests/test_frame.py (frame pixel checks) and /app/backend/tests/test_instax_name.py (name + slugified download). Frontend flow tested via headless Chromium: PIN unlock -> gallery search works instant/client-side (no XHR on keystrokes) -> Turkish tr-locale case-insensitive -> confirm view frame pills default frame-off, toggle to frame-on shows 'film şeridi' hint. Gemini budget preserved (0 caricature calls, 0 verify-gesture calls this iteration). If new creations are needed, note that server enforces 5/min caricature rate limit per IP."
+}

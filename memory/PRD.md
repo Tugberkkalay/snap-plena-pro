@@ -84,6 +84,12 @@ Etkinlik/yazılım lansmanı için fotoğraf çekip, o fotoğrafı şirket logol
 - ✅ Mobil indirme düzeltildi: Web Share API öncelikli (paylaşım menüsü → doğrudan Instax uygulamasına), fallback /api/images/{id}?dl=1 (Content-Disposition) — lib/download.js
 - ✅ Kütüphane ismi: onay ekranında opsiyonel isim (fotoğrafta ASLA görünmez), galeride overlay + modal, dosya adında slug (Türkçe karakterler ASCII'ye çevrilir: Ayşe→Ayse), 40 karakter limit uçtan uca
 - ✅ Test: iteration_8.json — backend 6/6, frontend %100 (1 üretim; 3:4 oran ölçüldü 0.750, isim görselde yok doğrulandı)
+
+## Galeri Arama + Instax Çerçevesi (9. iterasyon)
+- ✅ Galeri isim arama: anlık client-side filtre, Türkçe locale + aksan-duyarsız (cerceve→Çerçeve), temizle butonu, eşleşme-yok durumu
+- ✅ Instax Çerçevesi (opsiyonel, frame:bool): 30px beyaz kenarlık + 150px alt şerit (Plena logosu solda, "PLENA SNAP · HR VISION '26" sağda, Liberation Sans Bold); çerçeve modunda köşe logosu şeride taşınır
+- ✅ Onay ekranında "Baskı stili" seçimi: Tam Kare (varsayılan) / Instax Çerçevesi
+- ✅ Test: iteration_9.json — backend 5/5 (piksel doğrulama), frontend %100 (0 LLM kredisi)
 - Bilinen sınırlamalar: rate limit bellek içi (restart'ta sıfırlanır, tek pod için yeterli); CORS_ORIGINS env'de "*" (preview edge proxy zaten override ediyor, deploy'da domain'e sabitlenebilir)
 
 ## Backlog / Sonraki Adımlar

@@ -63,10 +63,10 @@ export default function GalleryView({ onBack, onPrint, onSlideshow }) {
     }
   };
 
+  const norm = (s) =>
+    (s || "").toLocaleLowerCase("tr").normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
   const filtered = query.trim()
-    ? creations.filter((c) =>
-        (c.name || "").toLocaleLowerCase("tr").includes(query.trim().toLocaleLowerCase("tr"))
-      )
+    ? creations.filter((c) => norm(c.name).includes(norm(query.trim())))
     : creations;
 
   return (
