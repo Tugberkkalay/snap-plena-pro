@@ -11,6 +11,26 @@ const PLACEMENTS = [
   { key: "tshirt", label: "Tişört Baskısı", icon: TShirt },
 ];
 
+function Pill({ active, disabled, onClick, icon: Icon, testId, children }) {
+  return (
+    <button
+      data-testid={testId}
+      disabled={disabled}
+      onClick={onClick}
+      className={`h-11 px-4 rounded-full text-sm font-medium flex items-center gap-2 transition-colors active:scale-95 ${
+        active
+          ? "bg-[#00E5FF] text-black"
+          : disabled
+          ? "bg-white/5 text-white/30 cursor-not-allowed"
+          : "glass-dock text-white"
+      }`}
+    >
+      {Icon && <Icon size={16} weight={active ? "bold" : "duotone"} />}
+      {children}
+    </button>
+  );
+}
+
 export default function ConfirmView({ photo, eventLogoExists, onGenerate, onRetake }) {
   const [logoMode, setLogoMode] = useState(eventLogoExists ? "event" : "none");
   const [customLogoB64, setCustomLogoB64] = useState(null);
@@ -84,27 +104,18 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
         <p className="text-sm text-[#A1A1AA] mb-3">Baskıya eklenecek logo:</p>
         <div className="flex flex-wrap gap-2">
           {options.map((opt) => (
-            <button
+            <Pill
               key={opt.key}
-              data-testid={`logo-mode-${opt.key}`}
+              testId={`logo-mode-${opt.key}`}
+              active={logoMode === opt.key}
               disabled={opt.disabled}
               onClick={() => {
-                if (opt.key === "custom" && !customLogoB64) {
-                  fileRef.current?.click();
-                } else {
-                  setLogoMode(opt.key);
-                }
+                if (opt.key === "custom" && !customLogoB64) fileRef.current?.click();
+                else setLogoMode(opt.key);
               }}
-              className={`h-11 px-5 rounded-full text-sm font-medium transition-colors active:scale-95 ${
-                logoMode === opt.key
-                  ? "bg-[#00E5FF] text-black"
-                  : opt.disabled
-                  ? "bg-white/5 text-white/30 cursor-not-allowed"
-                  : "glass-dock text-white"
-              }`}
             >
               {opt.label}
-            </button>
+            </Pill>
           ))}
           {logoMode === "custom" && customLogoB64 && (
             <button
@@ -128,22 +139,17 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
         <div className="mt-4">
           <p className="text-sm text-[#A1A1AA] mb-3">Logo nerede görünsün?</p>
           <div className="flex flex-wrap gap-2">
-            {PLACEMENTS.map((p) => {
-              const Icon = p.icon;
-              return (
-                <button
-                  key={p.key}
-                  data-testid={`placement-${p.key}`}
-                  onClick={() => setPlacement(p.key)}
-                  className={`h-11 px-4 rounded-full text-sm font-medium flex items-center gap-2 transition-colors active:scale-95 ${
-                    placement === p.key ? "bg-[#00E5FF] text-black" : "glass-dock text-white"
-                  }`}
-                >
-                  <Icon size={16} weight={placement === p.key ? "bold" : "duotone"} />
-                  {p.label}
-                </button>
-              );
-            })}
+            {PLACEMENTS.map((p) => (
+              <Pill
+                key={p.key}
+                testId={`placement-${p.key}`}
+                active={placement === p.key}
+                onClick={() => setPlacement(p.key)}
+                icon={p.icon}
+              >
+                {p.label}
+              </Pill>
+            ))}
           </div>
           <p className="text-xs text-white/60 mt-2">
             {placement === "corner"
@@ -156,26 +162,12 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
       <div className="mt-4">
         <p className="text-sm text-[#A1A1AA] mb-3">Baskı stili</p>
         <div className="flex flex-wrap gap-2">
-          <button
-            data-testid="frame-off"
-            onClick={() => setFrame(false)}
-            className={`h-11 px-4 rounded-full text-sm font-medium flex items-center gap-2 transition-colors active:scale-95 ${
-              !frame ? "bg-[#00E5FF] text-black" : "glass-dock text-white"
-            }`}
-          >
-            <Square size={16} weight={!frame ? "bold" : "duotone"} />
+          <Pill testId="frame-off" active={!frame} onClick={() => setFrame(false)} icon={Square}>
             Tam Kare
-          </button>
-          <button
-            data-testid="frame-on"
-            onClick={() => setFrame(true)}
-            className={`h-11 px-4 rounded-full text-sm font-medium flex items-center gap-2 transition-colors active:scale-95 ${
-              frame ? "bg-[#00E5FF] text-black" : "glass-dock text-white"
-            }`}
-          >
-            <FilmStrip size={16} weight={frame ? "bold" : "duotone"} />
+          </Pill>
+          <Pill testId="frame-on" active={frame} onClick={() => setFrame(true)} icon={FilmStrip}>
             Instax Çerçevesi
-          </button>
+          </Pill>
         </div>
         {frame && (
           <p className="text-xs text-white/60 mt-2">

@@ -33,6 +33,43 @@ function isLSign(lm) {
   return indexExt && middleFold && ringFold && pinkyFold && thumbExt && angleOk;
 }
 
+const FADE_IN = { initial: { opacity: 0 }, animate: { opacity: 1 } };
+const RISE_IN = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 } };
+const FADE_SWAP = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } };
+const SCALE_SWAP = { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0 } };
+const POP_IN = { initial: { opacity: 0, scale: 0.8 }, animate: { opacity: 1, scale: 1 } };
+const FLASH = { initial: { opacity: 0 }, animate: { opacity: [0, 0.7, 0] }, transition: { duration: 0.7 } };
+const MAX_FRAME_ERRORS = 150;
+
+function PinPanel({ pin, setPin, busy, onSubmit }) {
+  return (
+    <div className="flex gap-2 items-center" data-testid="pin-fallback-panel">
+      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
+        <LockKey size={16} weight="duotone" color="#00E5FF" />
+        <Input
+          data-testid="login-pin-input"
+          type="password"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="Yönetici PIN'i"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && pin && onSubmit()}
+          className="border-0 bg-transparent text-white placeholder:text-white/30 focus-visible:ring-0 w-36"
+        />
+      </div>
+      <button
+        data-testid="login-pin-submit"
+        onClick={onSubmit}
+        disabled={!pin || busy}
+        className="h-11 px-5 rounded-xl bg-[#00E5FF] text-black font-semibold active:scale-95 transition-transform disabled:opacity-40"
+      >
+        {busy ? "..." : "Gir"}
+      </button>
+    </div>
+  );
+}
+
 export default function LoginGate({ onUnlock }) {
   const [stage, setStage] = useState("idle");
   const [progress, setProgress] = useState(0);
@@ -48,6 +85,7 @@ export default function LoginGate({ onUnlock }) {
   const doneRef = useRef(false);
   const verifyRef = useRef(() => {});
   const lastHandRef = useRef(0);
+  const frameErrsRef = useRef(0);
   const handTargetRef = useRef({
     x: typeof window !== "undefined" ? window.innerWidth / 2 : 0,
     y: typeof window !== "undefined" ? window.innerHeight / 2 : 0,
@@ -101,16 +139,25 @@ export default function LoginGate({ onUnlock }) {
         }
         const p = heldRef.current / HOLD_MS;
         setProgress(p);
+        frameErrsRef.current = 0;
         if (p >= 1) {
           verifyRef.current();
           return;
         }
       } catch (e) {
-        // frame error, keep looping
+        frameErrsRef.current += 1;
+        if (frameErrsRef.current > MAX_FRAME_ERRORS) {
+          console.warn("Gesture recognizer failing repeatedly:", e?.message);
+          cleanup();
+          toast.error("El tanıma hatası — PIN ile giriş yapabilirsiniz");
+          setShowPin(true);
+          setStage("idle");
+          return;
+        }
       }
     }
     rafRef.current = requestAnimationFrame(loop);
-  }, [succeed]);
+  }, [cleanup]);
 
   const verifyFrame = useCallback(async () => {
     cancelAnimationFrame(rafRef.current);
@@ -172,7 +219,6 @@ export default function LoginGate({ onUnlock }) {
       lastTsRef.current = 0;
       rafRef.current = requestAnimationFrame(loop);
     } catch (e) {
-      console.error(e);
       toast.error("Kamera veya el tanıma başlatılamadı — PIN ile giriş yapabilirsiniz");
       setShowPin(true);
     }
@@ -211,18 +257,10 @@ export default function LoginGate({ onUnlock }) {
         }}
       />
 
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="text-white/50 tracking-[0.4em] text-xs uppercase mb-3"
-      >
+      <motion.p {...FADE_IN} className="text-white/50 tracking-[0.4em] text-xs uppercase mb-3">
         Plena Studio presents
       </motion.p>
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3"
-      >
+      <motion.div {...RISE_IN} className="flex items-center gap-3">
         <span className="font-display font-black tracking-tighter text-4xl sm:text-5xl attract-glow">
           PLENA <span className="text-[#00E5FF]">SNAP</span>
         </span>
@@ -231,13 +269,7 @@ export default function LoginGate({ onUnlock }) {
 
       <AnimatePresence mode="wait">
         {stage === "idle" && (
-          <motion.div
-            key="idle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center"
-          >
+          <motion.div key="idle" {...FADE_SWAP} className="flex flex-col items-center">
             <button
               data-testid="login-btn"
               onClick={startScan}
@@ -252,9 +284,7 @@ export default function LoginGate({ onUnlock }) {
         {(stage === "scanning" || stage === "verifying") && (
           <motion.div
             key="scanning"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
+            {...SCALE_SWAP}
             className="flex flex-col items-center mt-10"
             data-testid="login-scanning"
           >
@@ -289,13 +319,7 @@ export default function LoginGate({ onUnlock }) {
         )}
 
         {stage === "success" && (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center mt-12"
-            data-testid="login-success"
-          >
+          <motion.div key="success" {...POP_IN} className="flex flex-col items-center mt-12" data-testid="login-success">
             <CheckCircle size={64} weight="duotone" color="#00E5FF" />
             <p className="mt-4 text-[#00E5FF] tracking-[0.3em] uppercase text-sm">
               Erişim Onaylandı
@@ -305,41 +329,13 @@ export default function LoginGate({ onUnlock }) {
       </AnimatePresence>
 
       {stage === "success" && (
-        <motion.div
-          className="pointer-events-none fixed inset-0 z-40 bg-white"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.7, 0] }}
-          transition={{ duration: 0.7 }}
-        />
+        <motion.div className="pointer-events-none fixed inset-0 z-40 bg-white" {...FLASH} />
       )}
 
       {stage !== "success" && (
         <div className="absolute bottom-8 flex flex-col items-center gap-3">
           {showPin ? (
-            <div className="flex gap-2 items-center" data-testid="pin-fallback-panel">
-              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
-                <LockKey size={16} weight="duotone" color="#00E5FF" />
-                <Input
-                  data-testid="login-pin-input"
-                  type="password"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="Yönetici PIN'i"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && pin && submitPin()}
-                  className="border-0 bg-transparent text-white placeholder:text-white/30 focus-visible:ring-0 w-36"
-                />
-              </div>
-              <button
-                data-testid="login-pin-submit"
-                onClick={submitPin}
-                disabled={!pin || pinBusy}
-                className="h-11 px-5 rounded-xl bg-[#00E5FF] text-black font-semibold active:scale-95 transition-transform disabled:opacity-40"
-              >
-                {pinBusy ? "..." : "Gir"}
-              </button>
-            </div>
+            <PinPanel pin={pin} setPin={setPin} busy={pinBusy} onSubmit={submitPin} />
           ) : (
             <button
               data-testid="pin-fallback-btn"

@@ -33,7 +33,7 @@ class TestKarikaBooth:
             timeout=90,
         )
         assert r.status_code == 200, r.text[:300]
-        assert r.json().get("ok") is True
+        assert r.json().get("ok") == True
 
     def test_logo_status_exists(self, api_client):
         r = api_client.get(f"{API}/settings/logo", timeout=30)
@@ -129,7 +129,7 @@ class TestKarikaBooth:
         if not cid:
             pytest.skip("no creation available to delete")
         r = api_client.delete(f"{API}/creations/{cid}", timeout=60)
-        assert r.status_code == 200 and r.json().get("ok") is True
+        assert r.status_code == 200 and r.json().get("ok") == True
         assert api_client.get(f"{API}/images/{cid}", timeout=60).status_code == 404
         ids = [i["id"] for i in api_client.get(f"{API}/creations", timeout=60).json()]
         assert cid not in ids

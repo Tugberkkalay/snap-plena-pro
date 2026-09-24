@@ -1,20 +1,32 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "@phosphor-icons/react";
 import { API, api } from "@/lib/api";
 import SnapMark from "@/components/booth/SnapMark";
 
+const SLIDE_ANIM = {
+  initial: { opacity: 0, scale: 1 },
+  animate: { opacity: 1, scale: 1.06 },
+  exit: { opacity: 0 },
+  transition: { opacity: { duration: 1 }, scale: { duration: 6.5, ease: "linear" } },
+};
+
 export default function SlideshowView({ onExit }) {
   const [creations, setCreations] = useState([]);
   const [index, setIndex] = useState(0);
 
+  const load = useCallback(() => {
+    api
+      .get("/creations")
+      .then((r) => setCreations(r.data))
+      .catch((e) => console.warn("Slideshow list load failed:", e?.message));
+  }, []);
+
   useEffect(() => {
-    const load = () =>
-      api.get("/creations").then((r) => setCreations(r.data)).catch(() => {});
     load();
     const t = setInterval(load, 60000);
     return () => clearInterval(t);
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     if (creations.length < 2) return;
@@ -51,10 +63,7 @@ export default function SlideshowView({ onExit }) {
             key={current.id}
             src={`${API}/images/${current.id}`}
             alt="SNAP"
-            initial={{ opacity: 0, scale: 1 }}
-            animate={{ opacity: 1, scale: 1.06 }}
-            exit={{ opacity: 0 }}
-            transition={{ opacity: { duration: 1 }, scale: { duration: 6.5, ease: "linear" } }}
+            {...SLIDE_ANIM}
             className="absolute inset-0 h-full w-full object-contain"
           />
         )}

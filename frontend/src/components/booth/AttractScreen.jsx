@@ -61,7 +61,7 @@ export default function AttractScreen({ onStart, onGallery, onSettings, onLogout
           <span className="flex">
             {"SNAP".split("").map((ch, i) => (
               <motion.span
-                key={i}
+                key={`snap-${ch}-${i}`}
                 initial={{ opacity: 0, scale: 0, rotate: -15, y: 20 }}
                 animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
                 transition={{ delay: 0.25 + i * 0.13, type: "spring", stiffness: 380, damping: 13 }}

@@ -4,6 +4,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { API } from "@/lib/api";
 import { saveImage, slugify } from "@/lib/download";
 
+const RESULT_POP = { initial: { opacity: 0, scale: 0.92 }, animate: { opacity: 1, scale: 1 } };
+
 export default function ResultView({ result, onPrint, onNew, onHome, onGallery }) {
   const dataUrl = `data:image/jpeg;base64,${result.image_base64}`;
 
@@ -31,8 +33,7 @@ export default function ResultView({ result, onPrint, onNew, onHome, onGallery }
 
       <div className="flex-1 min-h-0 flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
+          {...RESULT_POP}
           className="aspect-[3/4] max-h-full rounded-2xl overflow-hidden border border-[#00E5FF]/30 shadow-[0_0_60px_rgba(0,229,255,0.15)]"
         >
           <img

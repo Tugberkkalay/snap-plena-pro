@@ -74,7 +74,7 @@ class TestAdminPinAndUpload:
         assert r.json() == {"ok": True}
         # verify persistence
         s = api_client.get(f"{API}/settings/logo")
-        assert s.status_code == 200 and s.json()["exists"] is True
+        assert s.status_code == 200 and s.json()["exists"] == True
         img = api_client.get(f"{API}/logo-image")
         assert img.status_code == 200
         assert img.headers["content-type"].startswith("image/")
@@ -145,7 +145,7 @@ class TestRegression:
     def test_logo_status_and_image(self, api_client):
         r = api_client.get(f"{API}/settings/logo")
         assert r.status_code == 200
-        assert r.json()["exists"] is True
+        assert r.json()["exists"] == True
         img = api_client.get(f"{API}/logo-image")
         assert img.status_code == 200 and len(img.content) > 1000
 

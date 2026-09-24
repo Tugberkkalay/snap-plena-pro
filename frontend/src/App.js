@@ -11,6 +11,7 @@ import GalleryView from "@/components/booth/GalleryView";
 import SlideshowView from "@/components/booth/SlideshowView";
 import SettingsSheet from "@/components/booth/SettingsSheet";
 import LoginGate from "@/components/booth/LoginGate";
+import { usePrint } from "@/hooks/usePrint";
 
 function App() {
   const [view, setView] = useState("attract");
@@ -18,7 +19,7 @@ function App() {
   const [result, setResult] = useState(null);
   const [eventLogoExists, setEventLogoExists] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [printSrc, setPrintSrc] = useState(null);
+  const { printSrc, handlePrint } = usePrint();
   const [unlocked, setUnlocked] = useState(
     () => sessionStorage.getItem("snap_unlocked") === "1"
   );
@@ -46,22 +47,6 @@ function App() {
   useEffect(() => {
     refreshLogo();
   }, [refreshLogo]);
-
-  useEffect(() => {
-    if (!printSrc) return;
-    const img = new Image();
-    img.onload = () => setTimeout(() => window.print(), 150);
-    img.onerror = () => toast.error("Yazdırma için görsel yüklenemedi");
-    img.src = printSrc;
-  }, [printSrc]);
-
-  const handlePrint = (src) => {
-    if (printSrc === src) {
-      setTimeout(() => window.print(), 100);
-    } else {
-      setPrintSrc(src);
-    }
-  };
 
   const handleCapture = (dataUrl) => {
     setPhoto(dataUrl);

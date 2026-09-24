@@ -163,62 +163,82 @@ def _cover(img: Image.Image, w: int, h: int) -> Image.Image:
     return img.crop((left, top, left + w, top + h))
 
 
+FRAME_BORDER, FRAME_STRIP_H = 30, 150
+STRIP_TEXT = "PLENA SNAP · HR VISION '26"
+STRIP_FONT_PATHS = (
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+)
+
+
+def _load_strip_font():
+    for fp in STRIP_FONT_PATHS:
+        try:
+            return ImageFont.truetype(fp, 34)
+        except Exception:
+            continue
+    logger.warning("Strip font not found, falling back to PIL default bitmap font")
+    return ImageFont.load_default()
+
+
+def _fit_logo(logo_bytes: bytes, max_w: int, max_h: int) -> Image.Image:
+    logo = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
+    ratio = min(max_w / logo.width, max_h / logo.height)
+    return logo.resize(
+        (max(1, round(logo.width * ratio)), max(1, round(logo.height * ratio))), Image.LANCZOS
+    )
+
+
+def _compose_framed(img: Image.Image, logo_bytes: Optional[bytes]) -> Image.Image:
+    photo = _cover(img, CANVAS_W - 2 * FRAME_BORDER, CANVAS_H - FRAME_BORDER - FRAME_STRIP_H)
+    canvas = Image.new("RGB", (CANVAS_W, CANVAS_H), (255, 255, 255))
+    canvas.paste(photo, (FRAME_BORDER, FRAME_BORDER))
+    strip_center = CANVAS_H - FRAME_STRIP_H // 2
+    if logo_bytes:
+        logo = _fit_logo(logo_bytes, int(CANVAS_W * 0.4), 74)
+        canvas.paste(logo, (FRAME_BORDER + 10, strip_center - logo.height // 2), logo)
+    draw = ImageDraw.Draw(canvas)
+    font = _load_strip_font()
+    bbox = draw.textbbox((0, 0), STRIP_TEXT, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.text(
+        (CANVAS_W - FRAME_BORDER - 10 - tw, strip_center - th // 2 - bbox[1]),
+        STRIP_TEXT, font=font, fill=(38, 38, 44),
+    )
+    return canvas
+
+
+def _compose_full(img: Image.Image, logo_bytes: Optional[bytes]) -> Image.Image:
+    canvas = _cover(img, CANVAS_W, CANVAS_H)
+    if logo_bytes:
+        logo = _fit_logo(logo_bytes, int(CANVAS_W * 0.24), int(CANVAS_H * 0.14))
+        pad = 20
+        plate = Image.new("RGBA", (logo.width + pad * 2, logo.height + pad * 2), (0, 0, 0, 0))
+        d = ImageDraw.Draw(plate)
+        d.rounded_rectangle([0, 0, plate.width - 1, plate.height - 1], radius=22, fill=(255, 255, 255, 235))
+        plate.paste(logo, (pad, pad), logo)
+        canvas.paste(plate, (CANVAS_W - plate.width - 40, CANVAS_H - plate.height - 40), plate)
+    return canvas
+
+
 def compose_print_image(caricature_bytes: bytes, logo_bytes: Optional[bytes], frame: bool = False) -> bytes:
     img = Image.open(io.BytesIO(caricature_bytes)).convert("RGB")
-
-    if frame:
-        border, strip_h = 30, 150
-        photo = _cover(img, CANVAS_W - 2 * border, CANVAS_H - border - strip_h)
-        canvas = Image.new("RGB", (CANVAS_W, CANVAS_H), (255, 255, 255))
-        canvas.paste(photo, (border, border))
-        strip_center = CANVAS_H - strip_h + strip_h // 2
-        if logo_bytes:
-            logo = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
-            ratio = 74 / logo.height
-            logo = logo.resize((max(1, round(logo.width * ratio)), 74), Image.LANCZOS)
-            if logo.width > int(CANVAS_W * 0.4):
-                ratio = int(CANVAS_W * 0.4) / logo.width
-                logo = logo.resize((int(CANVAS_W * 0.4), max(1, round(logo.height * ratio))), Image.LANCZOS)
-            canvas.paste(logo, (border + 10, strip_center - logo.height // 2), logo)
-        draw = ImageDraw.Draw(canvas)
-        font = None
-        for fp in (
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        ):
-            try:
-                font = ImageFont.truetype(fp, 34)
-                break
-            except Exception:
-                continue
-        if font is None:
-            font = ImageFont.load_default()
-        text = "PLENA SNAP · HR VISION '26"
-        bbox = draw.textbbox((0, 0), text, font=font)
-        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        draw.text((CANVAS_W - border - 10 - tw, strip_center - th // 2 - bbox[1]), text, font=font, fill=(38, 38, 44))
-    else:
-        canvas = _cover(img, CANVAS_W, CANVAS_H)
-        if logo_bytes:
-            logo = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
-            target_w = int(CANVAS_W * 0.24)
-            ratio = target_w / logo.width
-            logo = logo.resize((target_w, max(1, round(logo.height * ratio))), Image.LANCZOS)
-            if logo.height > int(CANVAS_H * 0.14):
-                ratio = int(CANVAS_H * 0.14) / logo.height
-                logo = logo.resize((max(1, round(logo.width * ratio)), int(CANVAS_H * 0.14)), Image.LANCZOS)
-            pad = 20
-            plate = Image.new("RGBA", (logo.width + pad * 2, logo.height + pad * 2), (0, 0, 0, 0))
-            d = ImageDraw.Draw(plate)
-            d.rounded_rectangle([0, 0, plate.width - 1, plate.height - 1], radius=22, fill=(255, 255, 255, 235))
-            plate.paste(logo, (pad, pad), logo)
-            pos = (CANVAS_W - plate.width - 40, CANVAS_H - plate.height - 40)
-            canvas.paste(plate, pos, plate)
-
+    canvas = _compose_framed(img, logo_bytes) if frame else _compose_full(img, logo_bytes)
     out = io.BytesIO()
     canvas.save(out, format="JPEG", quality=92, dpi=(300, 300))
     return out.getvalue()
+
+
+def decode_image_b64(b64: str, max_bytes: int, err: str) -> bytes:
+    try:
+        raw = base64.b64decode(b64)
+        if len(raw) > max_bytes:
+            raise ValueError("too large")
+        Image.open(io.BytesIO(raw)).verify()
+        return raw
+    except Exception:
+        raise HTTPException(status_code=400, detail=err)
 
 
 class CaricatureRequest(BaseModel):
@@ -256,25 +276,11 @@ async def root():
 @api_router.post("/caricature")
 async def create_caricature(request: Request, req: CaricatureRequest):
     check_rate_limit(request, "caricature", 5)
-    try:
-        raw = base64.b64decode(req.image_base64)
-        if len(raw) > 15 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="Fotoğraf çok büyük (max 15MB)")
-        Image.open(io.BytesIO(raw)).verify()
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=400, detail="Geçersiz görsel verisi")
+    decode_image_b64(req.image_base64, 15 * 1024 * 1024, "Geçersiz görsel verisi")
 
     logo_bytes = None
     if req.logo_base64:
-        try:
-            logo_bytes = base64.b64decode(req.logo_base64)
-            if len(logo_bytes) > 8 * 1024 * 1024:
-                raise ValueError("too large")
-            Image.open(io.BytesIO(logo_bytes)).verify()
-        except Exception:
-            raise HTTPException(status_code=400, detail="Geçersiz logo verisi")
+        logo_bytes = decode_image_b64(req.logo_base64, 8 * 1024 * 1024, "Geçersiz logo verisi")
     elif req.use_event_logo:
         setting = await db.settings.find_one({"key": "event_logo", "is_deleted": False})
         if setting:
@@ -381,13 +387,7 @@ async def auth_verify_pin(request: Request, x_admin_pin: Optional[str] = Header(
 @api_router.post("/auth/verify-gesture")
 async def auth_verify_gesture(request: Request, req: GestureVerifyRequest):
     check_rate_limit(request, "gesture", 12)
-    try:
-        raw = base64.b64decode(req.image_base64)
-        if len(raw) > 8 * 1024 * 1024:
-            raise ValueError("too large")
-        Image.open(io.BytesIO(raw)).verify()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Geçersiz görsel verisi")
+    decode_image_b64(req.image_base64, 8 * 1024 * 1024, "Geçersiz görsel verisi")
     chat = LlmChat(
         api_key=EMERGENT_KEY,
         session_id=str(uuid.uuid4()),

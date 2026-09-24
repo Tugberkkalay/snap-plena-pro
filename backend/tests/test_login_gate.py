@@ -57,13 +57,13 @@ class TestVerifyGestureVLM:
         assert r.status_code == 200, r.text
         data = r.json()
         assert isinstance(data.get("ok"), bool)
-        assert data["ok"] is True, f"L-sign photo should be accepted, got {data}"
+        assert data["ok"] == True, f"L-sign photo should be accepted, got {data}"
 
     def test_no_hand_image_rejected(self, client):
         r = client.post(f"{API}/auth/verify-gesture", json={"image_base64": b64(LOGO)}, timeout=120)
         assert r.status_code == 200, r.text
         data = r.json()
-        assert data.get("ok") is False, f"Logo image should be rejected, got {data}"
+        assert data.get("ok") == False, f"Logo image should be rejected, got {data}"
 
 
 # --- verify-pin (shares 'admin' rate bucket 10/min -> paced) ---

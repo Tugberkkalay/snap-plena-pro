@@ -68,7 +68,7 @@ def test_image_404_for_unknown_id(client):
 def test_logo_status_still_set(client):
     r = client.get(f"{API}/settings/logo", timeout=30)
     assert r.status_code == 200
-    assert r.json().get("exists") is True
+    assert r.json().get("exists") == True
 
 
 # --- DELETE /api/creations/{id} security (uses 1 admin-bucket slot) ---

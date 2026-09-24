@@ -10,7 +10,7 @@ export function unlockAudio() {
   try {
     getCtx();
   } catch (e) {
-    // audio not available
+    console.warn("Audio context unavailable:", e?.message);
   }
 }
 
@@ -40,6 +40,6 @@ export function playShutter() {
     click(0, 0.045, 2600, 0.6);
     click(0.075, 0.09, 1100, 0.5);
   } catch (e) {
-    // audio not available, silent fail
+    console.warn("Shutter sound unavailable:", e?.message);
   }
 }
