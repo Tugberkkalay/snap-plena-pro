@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ArrowCounterClockwise, Flag, MagicWand, Monitor, Stamp, TShirt, UploadSimple } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, Flag, FilmStrip, MagicWand, Monitor, Square, Stamp, TShirt, UploadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 
@@ -14,6 +14,7 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
   const [logoMode, setLogoMode] = useState(eventLogoExists ? "event" : "none");
   const [customLogoB64, setCustomLogoB64] = useState(null);
   const [placement, setPlacement] = useState("corner");
+  const [frame, setFrame] = useState(false);
   const [name, setName] = useState("");
   const fileRef = useRef(null);
 
@@ -129,6 +130,37 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
       )}
 
       <div className="mt-4">
+        <p className="text-sm text-[#A1A1AA] mb-3">Baskı stili</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            data-testid="frame-off"
+            onClick={() => setFrame(false)}
+            className={`h-11 px-4 rounded-full text-sm font-medium flex items-center gap-2 transition-colors active:scale-95 ${
+              !frame ? "bg-[#00E5FF] text-black" : "glass-dock text-white"
+            }`}
+          >
+            <Square size={16} weight={!frame ? "bold" : "duotone"} />
+            Tam Kare
+          </button>
+          <button
+            data-testid="frame-on"
+            onClick={() => setFrame(true)}
+            className={`h-11 px-4 rounded-full text-sm font-medium flex items-center gap-2 transition-colors active:scale-95 ${
+              frame ? "bg-[#00E5FF] text-black" : "glass-dock text-white"
+            }`}
+          >
+            <FilmStrip size={16} weight={frame ? "bold" : "duotone"} />
+            Instax Çerçevesi
+          </button>
+        </div>
+        {frame && (
+          <p className="text-xs text-white/60 mt-2">
+            İnce beyaz kenarlık + altta Plena logolu film şeridi eklenir.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4">
         <p className="text-sm text-[#A1A1AA] mb-2">
           Kütüphane ismi <span className="text-white/30">(fotoğrafta görünmez)</span>
         </p>
@@ -153,7 +185,7 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
         </button>
         <button
           data-testid="generate-btn"
-          onClick={() => onGenerate({ logoMode, customLogoB64, placement, name })}
+          onClick={() => onGenerate({ logoMode, customLogoB64, placement, name, frame })}
           className="flex-1 h-14 rounded-full bg-[#00E5FF] text-black font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform"
         >
           <MagicWand size={20} weight="bold" />

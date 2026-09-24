@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, DownloadSimple, LockKey, Play, Printer, Trash, X } from "@phosphor-icons/react";
+import { ArrowLeft, DownloadSimple, LockKey, MagnifyingGlass, Play, Printer, Trash, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { API, api } from "@/lib/api";
@@ -10,6 +10,7 @@ export default function GalleryView({ onBack, onPrint, onSlideshow }) {
   const [creations, setCreations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [query, setQuery] = useState("");
   const [deleteMode, setDeleteMode] = useState(false);
   const [pin, setPin] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -62,6 +63,12 @@ export default function GalleryView({ onBack, onPrint, onSlideshow }) {
     }
   };
 
+  const filtered = query.trim()
+    ? creations.filter((c) =>
+        (c.name || "").toLocaleLowerCase("tr").includes(query.trim().toLocaleLowerCase("tr"))
+      )
+    : creations;
+
   return (
     <div className="h-full w-full flex flex-col px-5 pt-5 pb-6" data-testid="gallery-view">
       <div className="flex items-center gap-4 mb-5">
@@ -83,6 +90,26 @@ export default function GalleryView({ onBack, onPrint, onSlideshow }) {
         </button>
       </div>
 
+      <div className="mb-4 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
+        <MagnifyingGlass size={18} weight="duotone" color="#00E5FF" />
+        <Input
+          data-testid="gallery-search-input"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="İsme göre ara..."
+          className="border-0 bg-transparent text-white placeholder:text-white/30 focus-visible:ring-0 h-11"
+        />
+        {query && (
+          <button
+            data-testid="gallery-search-clear"
+            onClick={() => setQuery("")}
+            className="text-white/40 hover:text-white/80 transition-colors"
+          >
+            <X size={16} weight="bold" />
+          </button>
+        )}
+      </div>
+
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <p className="text-[#A1A1AA] text-sm">Yükleniyor...</p>
@@ -91,9 +118,13 @@ export default function GalleryView({ onBack, onPrint, onSlideshow }) {
             <p className="text-[#A1A1AA] text-base">Henüz karikatür oluşturulmadı.</p>
             <p className="text-white/30 text-sm mt-2">İlk fotoğrafını çek ve başla!</p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center" data-testid="gallery-no-match">
+            <p className="text-[#A1A1AA] text-base">{`"${query}" ile eşleşen SNAP yok`}</p>
+          </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {creations.map((c, i) => (
+            {filtered.map((c, i) => (
               <motion.button
                 key={c.id}
                 data-testid={`gallery-item-${c.id}`}

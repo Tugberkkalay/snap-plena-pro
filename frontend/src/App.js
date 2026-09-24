@@ -68,7 +68,7 @@ function App() {
     setView("confirm");
   };
 
-  const handleGenerate = async ({ logoMode, customLogoB64, placement, name }) => {
+  const handleGenerate = async ({ logoMode, customLogoB64, placement, name, frame }) => {
     setView("processing");
     try {
       const res = await api.post("/caricature", {
@@ -77,6 +77,7 @@ function App() {
         logo_base64: logoMode === "custom" ? customLogoB64.split(",")[1] : null,
         logo_placement: logoMode === "none" ? "corner" : placement || "corner",
         name: name?.trim() || null,
+        frame: !!frame,
       });
       setResult(res.data);
       setView("result");

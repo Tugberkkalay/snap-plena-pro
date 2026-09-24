@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response
 from motor.motor_asyncio import AsyncIOMotorClient
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 
@@ -155,30 +155,66 @@ async def generate_caricature(photo_b64: str, logo_b64: Optional[str] = None, pl
     return base64.b64decode(images[0]["data"])
 
 
-def compose_print_image(caricature_bytes: bytes, logo_bytes: Optional[bytes]) -> bytes:
-    img = Image.open(io.BytesIO(caricature_bytes)).convert("RGB")
-    w, h = img.size
-    scale = max(CANVAS_W / w, CANVAS_H / h)
-    img = img.resize((round(w * scale), round(h * scale)), Image.LANCZOS)
-    left = (img.width - CANVAS_W) // 2
-    top = (img.height - CANVAS_H) // 2
-    canvas = img.crop((left, top, left + CANVAS_W, top + CANVAS_H))
+def _cover(img: Image.Image, w: int, h: int) -> Image.Image:
+    scale = max(w / img.width, h / img.height)
+    img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
+    left = (img.width - w) // 2
+    top = (img.height - h) // 2
+    return img.crop((left, top, left + w, top + h))
 
-    if logo_bytes:
-        logo = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
-        target_w = int(CANVAS_W * 0.24)
-        ratio = target_w / logo.width
-        logo = logo.resize((target_w, max(1, round(logo.height * ratio))), Image.LANCZOS)
-        if logo.height > int(CANVAS_H * 0.14):
-            ratio = int(CANVAS_H * 0.14) / logo.height
-            logo = logo.resize((max(1, round(logo.width * ratio)), int(CANVAS_H * 0.14)), Image.LANCZOS)
-        pad = 20
-        plate = Image.new("RGBA", (logo.width + pad * 2, logo.height + pad * 2), (0, 0, 0, 0))
-        d = ImageDraw.Draw(plate)
-        d.rounded_rectangle([0, 0, plate.width - 1, plate.height - 1], radius=22, fill=(255, 255, 255, 235))
-        plate.paste(logo, (pad, pad), logo)
-        pos = (CANVAS_W - plate.width - 40, CANVAS_H - plate.height - 40)
-        canvas.paste(plate, pos, plate)
+
+def compose_print_image(caricature_bytes: bytes, logo_bytes: Optional[bytes], frame: bool = False) -> bytes:
+    img = Image.open(io.BytesIO(caricature_bytes)).convert("RGB")
+
+    if frame:
+        border, strip_h = 30, 150
+        photo = _cover(img, CANVAS_W - 2 * border, CANVAS_H - border - strip_h)
+        canvas = Image.new("RGB", (CANVAS_W, CANVAS_H), (255, 255, 255))
+        canvas.paste(photo, (border, border))
+        strip_center = CANVAS_H - strip_h + strip_h // 2
+        if logo_bytes:
+            logo = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
+            ratio = 74 / logo.height
+            logo = logo.resize((max(1, round(logo.width * ratio)), 74), Image.LANCZOS)
+            if logo.width > int(CANVAS_W * 0.4):
+                ratio = int(CANVAS_W * 0.4) / logo.width
+                logo = logo.resize((int(CANVAS_W * 0.4), max(1, round(logo.height * ratio))), Image.LANCZOS)
+            canvas.paste(logo, (border + 10, strip_center - logo.height // 2), logo)
+        draw = ImageDraw.Draw(canvas)
+        font = None
+        for fp in (
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        ):
+            try:
+                font = ImageFont.truetype(fp, 34)
+                break
+            except Exception:
+                continue
+        if font is None:
+            font = ImageFont.load_default()
+        text = "PLENA SNAP · HR VISION '26"
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        draw.text((CANVAS_W - border - 10 - tw, strip_center - th // 2 - bbox[1]), text, font=font, fill=(38, 38, 44))
+    else:
+        canvas = _cover(img, CANVAS_W, CANVAS_H)
+        if logo_bytes:
+            logo = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
+            target_w = int(CANVAS_W * 0.24)
+            ratio = target_w / logo.width
+            logo = logo.resize((target_w, max(1, round(logo.height * ratio))), Image.LANCZOS)
+            if logo.height > int(CANVAS_H * 0.14):
+                ratio = int(CANVAS_H * 0.14) / logo.height
+                logo = logo.resize((max(1, round(logo.width * ratio)), int(CANVAS_H * 0.14)), Image.LANCZOS)
+            pad = 20
+            plate = Image.new("RGBA", (logo.width + pad * 2, logo.height + pad * 2), (0, 0, 0, 0))
+            d = ImageDraw.Draw(plate)
+            d.rounded_rectangle([0, 0, plate.width - 1, plate.height - 1], radius=22, fill=(255, 255, 255, 235))
+            plate.paste(logo, (pad, pad), logo)
+            pos = (CANVAS_W - plate.width - 40, CANVAS_H - plate.height - 40)
+            canvas.paste(plate, pos, plate)
 
     out = io.BytesIO()
     canvas.save(out, format="JPEG", quality=92, dpi=(300, 300))
@@ -191,6 +227,7 @@ class CaricatureRequest(BaseModel):
     logo_base64: Optional[str] = None
     logo_placement: Literal["corner", "flag", "banner", "tshirt"] = "corner"
     name: Optional[str] = None
+    frame: bool = False
 
 
 class GestureVerifyRequest(BaseModel):
@@ -246,8 +283,8 @@ async def create_caricature(request: Request, req: CaricatureRequest):
     logo_b64 = base64.b64encode(logo_bytes).decode("utf-8") if logo_bytes else None
     caricature_bytes = await generate_caricature(req.image_base64, logo_b64, req.logo_placement)
 
-    corner_logo = logo_bytes if req.logo_placement == "corner" else None
-    final_jpg = compose_print_image(caricature_bytes, corner_logo)
+    compose_logo = logo_bytes if (req.frame or req.logo_placement == "corner") else None
+    final_jpg = compose_print_image(caricature_bytes, compose_logo, req.frame)
 
     creation_id = str(uuid.uuid4())
     snap_name = (req.name or "").strip()[:40] or None
