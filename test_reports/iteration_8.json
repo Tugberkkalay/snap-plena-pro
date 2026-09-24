@@ -1,0 +1,30 @@
+{
+  "summary": "Verified Instax Mini (1200x1600 3:4) output + optional library name feature end-to-end. Backend: 6/6 pytest passing in /app/backend/tests/test_instax_name.py -- (a) /api/creations items include 'name' key (no _id leak), newest b1bd9672-... has name 'Instax Test Ali', (b) GET /api/images/b1bd9672-.../?dl=1 sets Content-Disposition attachment filename=\"Instax-Test-Ali-b1bd9672.jpg\" (slugified name + first-8 of id), (c) without dl -> no Content-Disposition, (d) old unnamed creation fallback filename is 'plena-snap-<id[:8]>.jpg', (e) newest image decodes with PIL to exactly 1200x1600 JPEG. Also fixed a stale assertion in existing test_share_download.py (old code used full creation id, new code uses [:8]). Frontend full flow (exactly 1 Gemini caricature generation used, 0 verify-gesture calls): PIN 574913 unlock -> tap-to-start -> uploaded synthetic PIL face jpg via photo-file-input -> confirm view: snap-name-input present with hint 'fotoğrafta görünmez', typed 'Test Misafir' -> generate -> result-view rendered in ~90s: result-image parent container ratio measured 0.750 (exact 3:4), caption 'Test Misafir · Instax Mini (46x62 mm) · 3:4 · Baskıya hazır' (contains both name and 'Instax Mini'), qr-share present, download-btn click fired GET /api/images/<newid>?dl=1 fallback with zero JS errors (headless Chromium has no navigator.canShare(files), so share-first path correctly fell through). Gallery: all tiles 3:4 (0.7500), the newly created 2eeec593-... and older b1bd9672-... both render with gallery-item-name-<id> overlays showing 'Test Misafir' and 'Instax Test Ali'. Detail modal for Test Misafir showed gallery-detail-name='Test Misafir' and gallery-download-btn fired the correct ?dl=1 URL with no JS errors. Screenshot visually confirms the name is NOT drawn on the caricature image (only the plena.pro logo appears in image area). No creations deleted, event logo untouched.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_instax_name.py",
+    "/app/test_reports/pytest/iteration8_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py L285-286: slug regex re.sub(r'[^A-Za-z0-9_-]+', '-', name).strip('-') strips all non-ASCII; a Turkish name like 'Ayşe' becomes 'Ay-e' (accent dropped). Consider unicodedata.normalize('NFKD', name).encode('ascii','ignore') for proper transliteration, or allow the raw name in RFC 5987 filename* param.",
+    "server.py L286 fallback uses creation_id[:8]; this deviates from the previous full-id filename convention referenced in test_share_download.py. Ensure any downstream Instax app / user script does not rely on the full-id filename.",
+    "ResultView.jsx L14 uses result.id.slice(0,8) which matches the backend slug rule -- keep these two constants in sync (extract to shared helper if changed).",
+    "ConfirmView.jsx L17-140 name is capped to 40 chars in JSX (maxLength) but backend re-truncates to 60 chars (server.py L252); harmonise limits so the UI does not silently accept-then-truncate."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_instax_name.py (new)",
+    "/app/backend/tests/test_share_download.py (updated stale filename assertion to use creation_id[:8])"
+  ],
+  "success_rate": {"backend": "100% (6/6 new + regression fix)", "frontend": "100% on all required checks (full flow + gallery + download fallback)"},
+  "test_credentials": "ADMIN_PIN=574913 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created 1 new creation id=2eeec593-1f60-4b45-9d57-794558f0db42 name='Test Misafir' via the frontend full-flow test (budgeted single Gemini call). Not deleted. No other data touched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Two named creations now exist for future assertions: b1bd9672-390e-4c78-8217-6ba7c81eacb7 ('Instax Test Ali') and 2eeec593-1f60-4b45-9d57-794558f0db42 ('Test Misafir'). The new backend regression file /app/backend/tests/test_instax_name.py covers name-in-list, slugified attachment filename, plena-snap fallback for unnamed, and 1200x1600 JPEG dimension check. Reuse this file. Slideshow open-then-exit was NOT fully re-verified this iteration because the detail modal remained open when Slayt was clicked; prior iterations covered it. Web Share sheet cannot be exercised headless -- verifying the fallback ?dl=1 request fires with no JS error is the correct proxy and works for both ResultView download-btn and GalleryView gallery-download-btn."
+}

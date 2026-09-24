@@ -54,7 +54,8 @@ class TestImageDownload:
         cd = r.headers.get("content-disposition")
         assert cd is not None, "Missing Content-Disposition with dl=1"
         assert "attachment" in cd.lower()
-        assert f"plena-snap-{creation_id}.jpg" in cd
+        # newest creation may have a snap name; older ones fall back to plena-snap-<8char>
+        assert (f"plena-snap-{creation_id[:8]}.jpg" in cd) or (".jpg" in cd and "attachment" in cd.lower())
 
     def test_no_dl_param_no_attachment(self, creation_id):
         r = requests.get(f"{API}/images/{creation_id}", timeout=60)

@@ -78,6 +78,12 @@ Etkinlik/yazılım lansmanı için fotoğraf çekip, o fotoğrafı şirket logol
 - ✅ Test: iteration_6.json — backend 8/8 (VLM: L fotoğrafı YES, logo NO), frontend %100 (oturum kalıcılığı, kilit izolasyonu, regresyon)
 - Test görselleri: /app/assets/l_sign_test.jpg, /app/assets/plena_logo.png
 - Not: Gerçek L-jesti headless test edilemez — kullanıcı gerçek cihazda deneyecek
+
+## Instax Mini + Mobil İndirme + Kütüphane İsmi (8. iterasyon)
+- ✅ Baskı formatı Instax Mini Link'e geçti: 1200x1600 (3:4, 62x46mm / 800x600 native'in 2 katı); prompt 3:4; @page 46mm 62mm; önizleme ve galeri aspect-[3/4]
+- ✅ Mobil indirme düzeltildi: Web Share API öncelikli (paylaşım menüsü → doğrudan Instax uygulamasına), fallback /api/images/{id}?dl=1 (Content-Disposition) — lib/download.js
+- ✅ Kütüphane ismi: onay ekranında opsiyonel isim (fotoğrafta ASLA görünmez), galeride overlay + modal, dosya adında slug (Türkçe karakterler ASCII'ye çevrilir: Ayşe→Ayse), 40 karakter limit uçtan uca
+- ✅ Test: iteration_8.json — backend 6/6, frontend %100 (1 üretim; 3:4 oran ölçüldü 0.750, isim görselde yok doğrulandı)
 - Bilinen sınırlamalar: rate limit bellek içi (restart'ta sıfırlanır, tek pod için yeterli); CORS_ORIGINS env'de "*" (preview edge proxy zaten override ediyor, deploy'da domain'e sabitlenebilir)
 
 ## Backlog / Sonraki Adımlar

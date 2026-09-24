@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import time
+import unicodedata
 import uuid
 from collections import defaultdict, deque
 from datetime import datetime, timezone
@@ -249,7 +250,7 @@ async def create_caricature(request: Request, req: CaricatureRequest):
     final_jpg = compose_print_image(caricature_bytes, corner_logo)
 
     creation_id = str(uuid.uuid4())
-    snap_name = (req.name or "").strip()[:60] or None
+    snap_name = (req.name or "").strip()[:40] or None
     path = f"{APP_NAME}/creations/{creation_id}.jpg"
     result = await asyncio.to_thread(put_object, path, final_jpg, "image/jpeg")
     created_at = datetime.now(timezone.utc).isoformat()
@@ -282,7 +283,8 @@ async def get_creation_image(creation_id: str, dl: int = 0):
     data, content_type = await asyncio.to_thread(get_object, doc["storage_path"])
     headers = {"Cache-Control": "public, max-age=86400, immutable"}
     if dl:
-        slug = re.sub(r"[^A-Za-z0-9_-]+", "-", doc.get("name") or "").strip("-")
+        ascii_name = unicodedata.normalize("NFKD", doc.get("name") or "").encode("ascii", "ignore").decode()
+        slug = re.sub(r"[^A-Za-z0-9_-]+", "-", ascii_name).strip("-")
         filename = f"{slug or 'plena-snap'}-{creation_id[:8]}.jpg"
         headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     return Response(content=data, media_type="image/jpeg", headers=headers)
