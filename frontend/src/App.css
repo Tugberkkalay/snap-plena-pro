@@ -105,20 +105,20 @@ body {
     100% { transform: scale(1.6); opacity: 0; }
 }
 
-/* ---------- PRINT (4x6 photo, 300dpi) ---------- */
+/* ---------- PRINT (Instax Mini 46x62mm, 3:4) ---------- */
 .print-area {
     display: none;
 }
 
 @media print {
     @page {
-        size: 4in 6in;
+        size: 46mm 62mm;
         margin: 0;
     }
 
     html, body {
-        width: 4in;
-        height: 6in;
+        width: 46mm;
+        height: 62mm;
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
@@ -132,8 +132,8 @@ body {
         display: block !important;
         position: fixed;
         inset: 0;
-        width: 4in;
-        height: 6in;
+        width: 46mm;
+        height: 62mm;
     }
 
     .print-area img {

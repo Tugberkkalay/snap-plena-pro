@@ -3,6 +3,7 @@ import base64
 import io
 import logging
 import os
+import re
 import time
 import uuid
 from collections import defaultdict, deque
@@ -61,7 +62,7 @@ def verify_admin_pin(request: Request, supplied_pin: Optional[str]):
     if not ADMIN_PIN or not compare_digest(supplied_pin or "", ADMIN_PIN):
         raise HTTPException(status_code=401, detail="Geçersiz yönetici PIN'i")
 
-CANVAS_W, CANVAS_H = 1200, 1800  # 4x6 inch portrait @ 300 DPI
+CANVAS_W, CANVAS_H = 1200, 1600  # Instax Mini (62x46mm, 800x600 native, 3:4) @ 2x
 
 CARICATURE_PROMPT = (
     "Transform the person or people in this photo into a premium hand-drawn caricature illustration. "
@@ -70,7 +71,7 @@ CARICATURE_PROMPT = (
     "Art style: vibrant modern digital cartoon, clean bold ink outlines, smooth cel shading, rich saturated "
     "colors, soft studio lighting. Replace the background with a festive technology product launch "
     "celebration: confetti in the air, glowing bokeh stage lights, subtle futuristic neon accents. "
-    "Portrait orientation composition (2:3 aspect ratio). High detail, poster quality. "
+    "Portrait orientation composition (3:4 aspect ratio). High detail, poster quality. "
     "Do not add any text, letters, numbers, watermarks or logos to the image."
 )
 
@@ -188,6 +189,7 @@ class CaricatureRequest(BaseModel):
     use_event_logo: bool = True
     logo_base64: Optional[str] = None
     logo_placement: Literal["corner", "flag", "banner", "tshirt"] = "corner"
+    name: Optional[str] = None
 
 
 class GestureVerifyRequest(BaseModel):
@@ -205,6 +207,7 @@ GESTURE_VERIFY_PROMPT = (
 class CreationOut(BaseModel):
     id: str
     created_at: str
+    name: Optional[str] = None
 
 
 @api_router.get("/")
@@ -246,17 +249,20 @@ async def create_caricature(request: Request, req: CaricatureRequest):
     final_jpg = compose_print_image(caricature_bytes, corner_logo)
 
     creation_id = str(uuid.uuid4())
+    snap_name = (req.name or "").strip()[:60] or None
     path = f"{APP_NAME}/creations/{creation_id}.jpg"
     result = await asyncio.to_thread(put_object, path, final_jpg, "image/jpeg")
     created_at = datetime.now(timezone.utc).isoformat()
     await db.creations.insert_one({
         "id": creation_id,
+        "name": snap_name,
         "storage_path": result["path"],
         "created_at": created_at,
         "is_deleted": False,
     })
     return {
         "id": creation_id,
+        "name": snap_name,
         "created_at": created_at,
         "image_base64": base64.b64encode(final_jpg).decode("utf-8"),
     }
@@ -265,7 +271,7 @@ async def create_caricature(request: Request, req: CaricatureRequest):
 @api_router.get("/creations", response_model=List[CreationOut])
 async def list_creations():
     docs = await db.creations.find({"is_deleted": False}, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return [CreationOut(id=d["id"], created_at=d["created_at"]) for d in docs]
+    return [CreationOut(id=d["id"], created_at=d["created_at"], name=d.get("name")) for d in docs]
 
 
 @api_router.api_route("/images/{creation_id}", methods=["GET", "HEAD"])
@@ -276,7 +282,9 @@ async def get_creation_image(creation_id: str, dl: int = 0):
     data, content_type = await asyncio.to_thread(get_object, doc["storage_path"])
     headers = {"Cache-Control": "public, max-age=86400, immutable"}
     if dl:
-        headers["Content-Disposition"] = f'attachment; filename="plena-snap-{creation_id}.jpg"'
+        slug = re.sub(r"[^A-Za-z0-9_-]+", "-", doc.get("name") or "").strip("-")
+        filename = f"{slug or 'plena-snap'}-{creation_id[:8]}.jpg"
+        headers["Content-Disposition"] = f'attachment; filename="{filename}"'
     return Response(content=data, media_type="image/jpeg", headers=headers)
 
 

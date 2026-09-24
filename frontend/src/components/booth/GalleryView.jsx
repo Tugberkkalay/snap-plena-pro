@@ -4,6 +4,7 @@ import { ArrowLeft, DownloadSimple, LockKey, Play, Printer, Trash, X } from "@ph
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { API, api } from "@/lib/api";
+import { saveImage, slugify } from "@/lib/download";
 
 export default function GalleryView({ onBack, onPrint, onSlideshow }) {
   const [creations, setCreations] = useState([]);
@@ -48,15 +49,14 @@ export default function GalleryView({ onBack, onPrint, onSlideshow }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const download = async (id) => {
+  const download = async (c) => {
     try {
-      const res = await api.get(`/images/${id}`, { responseType: "blob" });
-      const url = URL.createObjectURL(res.data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `plena-snap-${id}.jpg`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const res = await api.get(`/images/${c.id}`, { responseType: "blob" });
+      await saveImage({
+        blob: res.data,
+        filename: `${slugify(c.name)}-${c.id.slice(0, 8)}.jpg`,
+        fallbackUrl: `${API}/images/${c.id}?dl=1`,
+      });
     } catch {
       toast.error("İndirme başarısız");
     }
@@ -101,9 +101,17 @@ export default function GalleryView({ onBack, onPrint, onSlideshow }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(i * 0.05, 0.5) }}
                 onClick={() => setSelected(c)}
-                className="aspect-[2/3] rounded-xl overflow-hidden border border-white/10 active:scale-95 transition-transform"
+                className="relative aspect-[3/4] rounded-xl overflow-hidden border border-white/10 active:scale-95 transition-transform"
               >
                 <img src={`${API}/images/${c.id}`} alt="Karikatür" loading="lazy" className="h-full w-full object-cover" />
+                {c.name && (
+                  <span
+                    data-testid={`gallery-item-name-${c.id}`}
+                    className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 to-transparent text-[11px] text-white/90 px-2 pt-4 pb-1.5 text-left truncate"
+                  >
+                    {c.name}
+                  </span>
+                )}
               </motion.button>
             ))}
           </div>
@@ -122,8 +130,11 @@ export default function GalleryView({ onBack, onPrint, onSlideshow }) {
           <img
             src={`${API}/images/${selected.id}`}
             alt="Karikatür detay"
-            className="max-h-[70vh] rounded-2xl border border-white/10 object-contain"
+            className="max-h-[65vh] rounded-2xl border border-white/10 object-contain"
           />
+          {selected.name && (
+            <p className="mt-3 text-sm text-white/70" data-testid="gallery-detail-name">{selected.name}</p>
+          )}
           <div className="flex gap-3 mt-5">
             <button
               data-testid="gallery-print-btn"
@@ -135,7 +146,7 @@ export default function GalleryView({ onBack, onPrint, onSlideshow }) {
             </button>
             <button
               data-testid="gallery-download-btn"
-              onClick={() => download(selected.id)}
+              onClick={() => download(selected)}
               className="h-13 px-6 py-3 rounded-full glass-dock font-medium flex items-center gap-2 active:scale-95 transition-transform"
             >
               <DownloadSimple size={20} weight="bold" />

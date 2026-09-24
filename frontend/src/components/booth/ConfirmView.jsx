@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { ArrowCounterClockwise, Flag, MagicWand, Monitor, Stamp, TShirt, UploadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 const PLACEMENTS = [
   { key: "corner", label: "Köşe Damgası", icon: Stamp },
@@ -13,6 +14,7 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
   const [logoMode, setLogoMode] = useState(eventLogoExists ? "event" : "none");
   const [customLogoB64, setCustomLogoB64] = useState(null);
   const [placement, setPlacement] = useState("corner");
+  const [name, setName] = useState("");
   const fileRef = useRef(null);
 
   const handleLogoFile = (e) => {
@@ -126,6 +128,20 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
         </div>
       )}
 
+      <div className="mt-4">
+        <p className="text-sm text-[#A1A1AA] mb-2">
+          Kütüphane ismi <span className="text-white/30">(fotoğrafta görünmez)</span>
+        </p>
+        <Input
+          data-testid="snap-name-input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={40}
+          placeholder="ör. Ayşe & Mehmet"
+          className="h-12 rounded-xl bg-white/5 border-white/10 text-white placeholder:text-white/25"
+        />
+      </div>
+
       <div className="flex gap-3 mt-6">
         <button
           data-testid="retake-btn"
@@ -137,7 +153,7 @@ export default function ConfirmView({ photo, eventLogoExists, onGenerate, onReta
         </button>
         <button
           data-testid="generate-btn"
-          onClick={() => onGenerate({ logoMode, customLogoB64, placement })}
+          onClick={() => onGenerate({ logoMode, customLogoB64, placement, name })}
           className="flex-1 h-14 rounded-full bg-[#00E5FF] text-black font-semibold flex items-center justify-center gap-2 active:scale-95 transition-transform"
         >
           <MagicWand size={20} weight="bold" />

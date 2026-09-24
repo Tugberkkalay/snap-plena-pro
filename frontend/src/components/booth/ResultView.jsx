@@ -2,15 +2,18 @@ import { motion } from "framer-motion";
 import { Camera, DownloadSimple, House, Images, Printer } from "@phosphor-icons/react";
 import { QRCodeSVG } from "qrcode.react";
 import { API } from "@/lib/api";
+import { saveImage, slugify } from "@/lib/download";
 
 export default function ResultView({ result, onPrint, onNew, onHome, onGallery }) {
   const dataUrl = `data:image/jpeg;base64,${result.image_base64}`;
 
-  const download = () => {
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `plena-snap-${result.id}.jpg`;
-    a.click();
+  const download = async () => {
+    const blob = await (await fetch(dataUrl)).blob();
+    await saveImage({
+      blob,
+      filename: `${slugify(result.name)}-${result.id.slice(0, 8)}.jpg`,
+      fallbackUrl: `${API}/images/${result.id}?dl=1`,
+    });
   };
 
   return (
@@ -30,7 +33,7 @@ export default function ResultView({ result, onPrint, onNew, onHome, onGallery }
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="aspect-[2/3] max-h-full rounded-2xl overflow-hidden border border-[#00E5FF]/30 shadow-[0_0_60px_rgba(0,229,255,0.15)]"
+          className="aspect-[3/4] max-h-full rounded-2xl overflow-hidden border border-[#00E5FF]/30 shadow-[0_0_60px_rgba(0,229,255,0.15)]"
         >
           <img
             src={dataUrl}
@@ -41,7 +44,9 @@ export default function ResultView({ result, onPrint, onNew, onHome, onGallery }
         </motion.div>
       </div>
 
-      <p className="text-center text-xs text-white/40 mt-3">10x15 cm (4x6") · 300 DPI · Baskıya hazır</p>
+      <p className="text-center text-xs text-white/40 mt-3">
+        {result.name ? `${result.name} · ` : ""}Instax Mini (46x62 mm) · 3:4 · Baskıya hazır
+      </p>
 
       <div className="flex items-center justify-center gap-4 mt-4" data-testid="qr-share">
         <div className="bg-white p-2 rounded-xl shrink-0">
