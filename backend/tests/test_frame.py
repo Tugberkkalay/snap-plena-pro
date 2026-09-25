@@ -15,6 +15,7 @@ BASE_URL = base_url.rstrip("/")
 API = f"{BASE_URL}/api"
 
 UNFRAMED_ID = "2eeec593-1f60-4b45-9d57-794558f0db42"  # Test Misafir (older, unframed)
+FRAMED_ID = "83d24452-8e6b-4a79-acef-b094b2f151f9"  # Çerçeve Testi (framed)
 
 
 def _get_creations():
@@ -31,17 +32,15 @@ def _fetch_img(cid):
 
 
 class TestFramedCreation:
-    def test_newest_creation_named_cerceve_testi(self):
+    def test_framed_creation_exists_named_cerceve_testi(self):
         data = _get_creations()
         assert len(data) > 0
-        newest = data[0]  # backend returns newest-first
-        assert newest.get("name") == "Çerçeve Testi", f"newest name is {newest.get('name')}, id={newest.get('id')}"
+        match = next((c for c in data if c.get("id") == FRAMED_ID), None)
+        assert match is not None, f"framed creation {FRAMED_ID} missing"
+        assert match.get("name") == "Çerçeve Testi", f"name is {match.get('name')}"
 
     def test_framed_image_has_white_border_and_strip(self):
-        data = _get_creations()
-        newest = data[0]
-        assert newest.get("name") == "Çerçeve Testi"
-        img = _fetch_img(newest["id"]).convert("RGB")
+        img = _fetch_img(FRAMED_ID).convert("RGB")
         assert img.size == (1200, 1600)
 
         # Border pixel (5,5) should be pure white

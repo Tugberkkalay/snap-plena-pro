@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="14" skipped="1" tests="24" time="7.585" timestamp="2026-09-24T05:44:01.892734+00:00" hostname="agent-env-bb195a09-1550-4f0c-ac95-72616802328b"><testcase classname="tests.test_login_gate.TestVerifyGestureValidation" name="test_invalid_base64_returns_400" time="0.140" /><testcase classname="tests.backend_test.TestKarikaBooth" name="test_root" time="0.141" /><testcase classname="tests.test_login_gate.TestVerifyGestureValidation" name="test_non_image_base64_returns_400" time="0.065" /><testcase classname="tests.backend_test.TestKarikaBooth" name="test_upload_event_logo" time="0.114"><failure message="AssertionError: {&quot;detail&quot;:&quot;Çok fazla istek, lütfen biraz bekleyip tekrar deneyin&quot;}&#10;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/backend_test.py:35: in test_upload_event_logo
+    assert r.status_code == 200, r.text[:300]
+E   AssertionError: {"detail":"Çok fazla istek, lütfen biraz bekleyip tekrar deneyin"}
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.test_login_gate.TestVerifyGestureValidation" name="test_missing_field_returns_422" time="0.062" /><testcase classname="tests.test_login_gate.TestVerifyPin" name="test_no_header_401" time="0.061"><failure message="AssertionError: {&quot;detail&quot;:&quot;Çok fazla istek, lütfen biraz bekleyip tekrar deneyin&quot;}&#10;assert 429 == 401&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/test_login_gate.py:73: in test_no_header_401
+    assert r.status_code == 401, r.text
+E   AssertionError: {"detail":"Çok fazla istek, lütfen biraz bekleyip tekrar deneyin"}
+E   assert 429 == 401
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_logo_status_exists" time="0.061" /><testcase classname="tests.backend_test.TestKarikaBooth" name="test_logo_image_served" time="0.232"><failure message="AssertionError: assert (1515, 570) == (400, 160)&#10;  &#10;  At index 0 diff: 1515 != 400&#10;  &#10;  Full diff:&#10;    (&#10;  +     1515,&#10;  -     400,...&#10;  &#10;  ...Full output truncated (5 lines hidden), use '-vv' to show">tests/backend_test.py:48: in test_logo_image_served
+    assert img.size == Image.open(io.BytesIO(logo_bytes)).size
+E   AssertionError: assert (1515, 570) == (400, 160)
+E     
+E     At index 0 diff: 1515 != 400
+E     
+E     Full diff:
+E       (
+E     +     1515,
+E     -     400,...
+E     
+E     ...Full output truncated (5 lines hidden), use '-vv' to show</failure></testcase><testcase classname="tests.test_login_gate.TestVerifyPin" name="test_wrong_pin_401" time="1.065"><failure message="AssertionError: {&quot;detail&quot;:&quot;Çok fazla istek, lütfen biraz bekleyip tekrar deneyin&quot;}&#10;assert 429 == 401&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/test_login_gate.py:78: in test_wrong_pin_401
+    assert r.status_code == 401, r.text
+E   AssertionError: {"detail":"Çok fazla istek, lütfen biraz bekleyip tekrar deneyin"}
+E   assert 429 == 401
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_upload_non_image_rejected" time="0.059"><failure message="AssertionError: {&quot;detail&quot;:&quot;Çok fazla istek, lütfen biraz bekleyip tekrar deneyin&quot;}&#10;assert 429 == 400&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/backend_test.py:56: in test_upload_non_image_rejected
+    assert r.status_code == 400, r.text[:300]
+E   AssertionError: {"detail":"Çok fazla istek, lütfen biraz bekleyip tekrar deneyin"}
+E   assert 429 == 400
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_caricature_invalid_base64" time="0.064"><failure message="AssertionError: expected 400, got 429: {&quot;detail&quot;:&quot;Çok fazla istek, lütfen biraz bekleyip tekrar deneyin&quot;}&#10;assert 429 == 400&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/backend_test.py:61: in test_caricature_invalid_base64
+    assert r.status_code == 400, f"expected 400, got {r.status_code}: {r.text[:300]}"
+E   AssertionError: expected 400, got 429: {"detail":"Çok fazla istek, lütfen biraz bekleyip tekrar deneyin"}
+E   assert 429 == 400
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_caricature_missing_field" time="0.059" /><testcase classname="tests.backend_test.TestKarikaBooth" name="test_caricature_with_event_logo" time="0.067"><failure message="AssertionError: status=429 body={&quot;detail&quot;:&quot;Çok fazla istek, lütfen biraz bekleyip tekrar deneyin&quot;}&#10;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/backend_test.py:74: in test_caricature_with_event_logo
+    assert r.status_code == 200, f"status={r.status_code} body={r.text[:300]}"
+E   AssertionError: status=429 body={"detail":"Çok fazla istek, lütfen biraz bekleyip tekrar deneyin"}
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_caricature_with_custom_logo" time="0.060"><failure message="AssertionError: status=429 body={&quot;detail&quot;:&quot;Çok fazla istek, lütfen biraz bekleyip tekrar deneyin&quot;}&#10;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/backend_test.py:92: in test_caricature_with_custom_logo
+    assert r.status_code == 200, f"status={r.status_code} body={r.text[:300]}"
+E   AssertionError: status=429 body={"detail":"Çok fazla istek, lütfen biraz bekleyip tekrar deneyin"}
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_list_creations_contains_new" time="0.060"><failure message="AssertionError: [{'id': 'da961d76-33fc-4b01-97d3-6eff0c15af4a', 'created_at': '2026-09-24T05:41:51.474838+00:00', 'name': None}, {'id': 'c69d683e-bf3d-4241-aff7-e89092d345bf', 'created_at': '2026-09-24T05:40:52.715290+00:00', 'name': 'Tuğberk test'}]&#10;assert False&#10; +  where False = all(&lt;generator object TestKarikaBooth.test_list_creations_contains_new.&lt;locals&gt;.&lt;genexpr&gt; at 0xfc6f5e7f99a0&gt;)">tests/backend_test.py:104: in test_list_creations_contains_new
+    assert all(set(i.keys()) == {"id", "created_at"} for i in items), items[:2]
+E   AssertionError: [{'id': 'da961d76-33fc-4b01-97d3-6eff0c15af4a', 'created_at': '2026-09-24T05:41:51.474838+00:00', 'name': None}, {'id': 'c69d683e-bf3d-4241-aff7-e89092d345bf', 'created_at': '2026-09-24T05:40:52.715290+00:00', 'name': 'Tuğberk test'}]
+E   assert False
+E    +  where False = all(&lt;generator object TestKarikaBooth.test_list_creations_contains_new.&lt;locals&gt;.&lt;genexpr&gt; at 0xfc6f5e7f99a0&gt;)</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_get_image_ok" time="0.344"><failure message="AssertionError: assert (1200, 1600) == (1200, 1800)&#10;  &#10;  At index 1 diff: 1600 != 1800&#10;  &#10;  Full diff:&#10;    (&#10;        1200,&#10;  -     1800,...&#10;  &#10;  ...Full output truncated (4 lines hidden), use '-vv' to show">tests/backend_test.py:121: in test_get_image_ok
+    assert img.size == (1200, 1800)
+E   AssertionError: assert (1200, 1600) == (1200, 1800)
+E     
+E     At index 1 diff: 1600 != 1800
+E     
+E     Full diff:
+E       (
+E           1200,
+E     -     1800,...
+E     
+E     ...Full output truncated (4 lines hidden), use '-vv' to show</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_get_image_not_found" time="0.060" /><testcase classname="tests.backend_test.TestKarikaBooth" name="test_delete_creation_soft_delete" time="0.000"><skipped type="pytest.skip" message="no creation available to delete">/app/backend/tests/backend_test.py:130: no creation available to delete</skipped></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_delete_creation_not_found" time="0.059"><failure message="AssertionError: {&quot;detail&quot;:&quot;Çok fazla istek, lütfen biraz bekleyip tekrar deneyin&quot;}&#10;assert 429 == 404&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/backend_test.py:139: in test_delete_creation_not_found
+    assert r.status_code == 404, r.text[:300]
+E   AssertionError: {"detail":"Çok fazla istek, lütfen biraz bekleyip tekrar deneyin"}
+E   assert 429 == 404
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.test_login_gate.TestVerifyPin" name="test_correct_pin_200" time="1.064"><failure message="AssertionError: {&quot;detail&quot;:&quot;Çok fazla istek, lütfen biraz bekleyip tekrar deneyin&quot;}&#10;assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/test_login_gate.py:83: in test_correct_pin_200
+    assert r.status_code == 200, r.text
+E   AssertionError: {"detail":"Çok fazla istek, lütfen biraz bekleyip tekrar deneyin"}
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_delete_event_logo" time="0.059"><failure message="assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/backend_test.py:144: in test_delete_event_logo
+    assert r.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.backend_test.TestKarikaBooth" name="test_zz_restore_event_logo_for_frontend" time="0.059"><failure message="assert 429 == 200&#10; +  where 429 = &lt;Response [429]&gt;.status_code">tests/backend_test.py:154: in test_zz_restore_event_logo_for_frontend
+    assert r.status_code == 200
+E   assert 429 == 200
+E    +  where 429 = &lt;Response [429]&gt;.status_code</failure></testcase><testcase classname="tests.test_login_gate.TestVerifyGestureVLM" name="test_l_sign_image_unlocks" time="3.008" /><testcase classname="tests.test_login_gate.TestVerifyGestureVLM" name="test_no_hand_image_rejected" time="1.671" /></testsuite></testsuites>

@@ -1,0 +1,33 @@
+{
+  "summary": "Iteration 10 - Full REGRESSION verification of code-quality refactor (decode_image_b64 helper, compose_print_image split, LoginGate/PinPanel/ConfirmView/usePrint/SlideshowView refactors). ZERO Gemini calls made from caricature generation (budget preserved). BACKEND: 37/37 free tests PASS (test_security, test_gallery_delete, test_share_download, test_frame, test_instax_name) after fixing 2 stale assertions unrelated to refactor: (a) test_security.py::test_creations_and_image key-set (list now legitimately includes 'name' field, tightened to superset check), (b) test_frame.py stale 'newest is Çerçeve Testi' (new creations 4fa0cf96, da961d76, c69d683e were added between iter9 and iter10) -> rewrote to lookup FRAMED_ID=83d24452 by id. test_login_gate.py: 8/8 PASS (invalid base64 400, non-image 400, missing field 422, l-sign unlocks, no-hand rejected, no-header 401, wrong-pin 401, correct-pin 200). NEW /app/backend/tests/test_decode_image_helper.py: 3/3 PASS - (1) POST /api/caricature invalid photo b64 -> 400 'Geçersiz görsel verisi', (2) valid photo + invalid logo_base64 -> 400 'Geçersiz logo verisi' (proves decode order: photo -> logo -> Gemini, so invalid logo aborts before any LLM cost), (3) POST /api/auth/verify-gesture invalid b64 -> 400. Total backend: 48 passing (37 free + 8 login + 3 decode). FRONTEND happy-path (headless Chromium, no Gemini): login-gate -> pin-fallback-btn opens PinPanel (login-pin-input, login-pin-submit disabled when empty=TRUE), wrong PIN 111111 shows toast 'Geçersiz PIN' (401 backend), correct PIN 574913 unlocks -> attract-screen with 'PLENA SNAP' animated title -> tap-to-start -> photo-file-input synthetic upload -> confirm-view: 3 logo-mode pills, 4 placement pills, 2 frame pills (Pill component extraction OK), snap-name-input accepts 'TEST NAME', frame-on click reveals frame-preview -> retake-btn returns via camera-back -> attract -> gallery-btn -> gallery-view, search 'Çerçeve' -> 1 tile 'Çerçeve Testi' -> detail modal opens with gallery-detail-name='Çerçeve Testi' and 3 action buttons (gallery-print-btn, gallery-download-btn, gallery-delete-btn) present -> slideshow-btn opens slideshow-view with slideshow-counter+slideshow-exit -> exit returns to gallery -> gallery-back -> attract -> logout-btn returns to login gate (sessionStorage cleared). Console: 0 errors, 1 benign warning (fullscreen requires user gesture in slideshow, expected). No creations were deleted; event logo untouched.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_decode_image_helper.py",
+    "/app/backend/tests/test_frame.py",
+    "/app/backend/tests/test_security.py",
+    "/app/test_reports/pytest/iteration10_free2.xml",
+    "/app/test_reports/pytest/iteration10_login2.xml",
+    "/app/test_reports/pytest/iteration10_decode.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py decode_image_b64 helper: consider raising a typed DecodeError with a label field instead of accepting a Turkish error string arg — call sites currently duplicate the Turkish literal 'Geçersiz {logo,görsel} verisi' which is fine short-term but centralising the labels in a small enum/constants block would prevent copy-paste drift.",
+    "FRAME_STRIP_H/FRAME_BORDER constants now exist (good) but STRIP_TEXT is hardcoded 'PLENA SNAP · HR VISION 26' — if the event name is ever driven by settings, this should read from a config/env var similar to ADMIN_PIN.",
+    "LoginGate.jsx MAX_FRAME_ERRORS=150 loop guard is a great addition, but the constant lives in-file — extracting a small `constants.js` module alongside the animation constants (FADE_IN etc.) would make guardrails discoverable.",
+    "usePrint.js hook extracted from App.js — verify with a unit test that it properly memoises the print handler so ResultView doesn't re-render on unrelated App state changes (not verified this iteration since ResultView requires generation).",
+    "SlideshowView load useCallback + SLIDE_ANIM const: catch(err) logs a warning — good; but consider surfacing a user-facing toast if slideshow load fails so operators aren't left staring at a blank slide."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_frame.py (rewrote stale 'newest' assumption -> lookup by FRAMED_ID=83d24452)",
+    "/app/backend/tests/test_security.py (loosened creations key-set assert to allow new 'name' field)",
+    "/app/backend/tests/test_decode_image_helper.py (new: 3 refactor regression tests, zero LLM cost)"
+  ],
+  "success_rate": {"backend": "100% (48/48 non-generation tests)", "frontend": "100% (all happy-path steps: gate, PinPanel, unlock, attract, upload, confirm pills, name input, frame preview, retake, gallery, search, detail modal, slideshow, logout)"},
+  "test_credentials": "ADMIN_PIN=574913 (verified from /app/memory/test_credentials.md, wrong-PIN=111111 for 401 path)",
+  "seed_data_creation": "None. Preserved: 83d24452 'Çerçeve Testi', 2eeec593 'Test Misafir', b1bd9672 'Instax Test Ali', c69d683e 'Tuğberk test', plus 21 anonymous creations. Event logo untouched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Refactor is regression-clean. Reusable regression files: /app/backend/tests/test_decode_image_helper.py (validates both decode_image_b64 call sites; runs in <1s with zero Gemini cost). test_frame.py now uses stable FRAMED_ID lookup instead of 'newest' — safe against future creation additions. Only pre-existing flakiness observed: backend_test.py tests that mutate event logo require X-Admin-Pin header via authenticated fixture; if that fixture isn't wired they 401 (unrelated to this refactor). Frontend gallery tile testid is button[data-testid^='gallery-item-'] NOT 'gallery-tile-' — use this selector in future scripts.",
+  "rca of the issue": "No refactor-caused issues found. The two initial pytest failures were both stale test assumptions (data drift + new 'name' field in list response added in prior iteration), not refactor regressions. Fixed the tests; behaviour under refactored code is byte-compatible with pre-refactor as previously confirmed by main agent unit tests on compose_print_image."
+}

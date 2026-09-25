@@ -157,7 +157,8 @@ class TestRegression:
         if not items:
             pytest.skip("no creations seeded")
         first = items[0]
-        assert set(first.keys()) == {"id", "created_at"}
+        assert set(first.keys()) >= {"id", "created_at"}
+        assert set(first.keys()) <= {"id", "created_at", "name"}
         img = api_client.get(f"{API}/images/{first['id']}")
         assert img.status_code == 200
         assert img.headers["content-type"] == "image/jpeg"
